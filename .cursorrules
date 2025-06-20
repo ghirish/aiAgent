@@ -1,0 +1,139 @@
+# Cursor Rules
+
+## Instructions
+
+- Record fixes for mistakes or corrections to avoid repetition in the `Lessons` section.
+- Organize thoughts and plan steps before starting a task in the `Scratchpad` section.
+- Clear old tasks if necessary.
+- Use todo markers for progress tracking:
+  - `[X]` Completed tasks
+  - `[ ]` Pending tasks
+- Update Scratchpad after completing subtasks.
+- Reflect and plan after milestones for better task management.
+- Always refer to Scratchpad before planning the next step.
+
+## Lessons
+
+### Phase 1 Learnings
+- MCP SDK v0.4.0 has different API than newer examples online
+- Server constructor requires single argument in v0.4.0, not two separate objects
+- TypeScript strict mode causes issues with current MCP SDK - use relaxed settings for testing
+- Simple MCP server works correctly - Phase 1 foundation is solid
+
+### Phase 2 Learnings
+- Azure OpenAI SDK uses OpenAIClient and AzureKeyCredential, not OpenAIApi and Configuration
+- Google Calendar API integration requires proper OAuth 2.0 flow setup
+- MCP server successfully integrates with external services (Google Calendar + Azure AI)
+- Type filtering required for busy times from Google Calendar API
+- All 8 calendar tools implemented: events, availability, slots, create, update, cancel, summary, parse
+- Natural language processing integrated with calendar operations successfully
+
+### OAuth Authentication Issues
+- Google Cloud Console projects in testing mode require test users to be explicitly added
+- Error 403 "access_denied" occurs when user is not in test users list
+- Solution: Add user email to OAuth consent screen test users section
+- Development apps show "unsafe app" warnings - normal behavior during testing phase
+
+
+## Scratchpad
+
+### 🎯 Calendar Copilot - MCP Implementation Plan
+
+**Current Focus: Building Calendar Copilot with Google Calendar + Azure AI Foundry**
+
+#### Phase 1: Foundation & Setup ✅
+- [X] Project Structure Setup
+  - [X] TypeScript configuration
+  - [X] Environment variables and secrets management
+  - [X] Logging and error handling framework
+- [X] MCP Server Core
+  - [X] Implement MCP protocol server
+  - [X] Define tools/capabilities for calendar operations
+  - [X] Set up proper request/response handling
+- [X] Testing & Validation
+  - [X] Dependencies installed successfully
+  - [X] Basic MCP server compiles and runs
+  - [X] Simple test tool responds correctly
+
+#### Phase 2: External Integrations ✅
+- [X] Google Calendar API Integration
+  - [X] OAuth 2.0 flow setup
+  - [X] Google Calendar API client
+  - [X] Calendar CRUD operations (read, create, update, delete events)
+  - [X] Free/busy time detection
+- [X] Azure AI Foundry Integration
+  - [X] Azure OpenAI client setup
+  - [X] Prompt engineering for calendar-specific tasks
+  - [X] Intent recognition and entity extraction
+  - [X] Smart response generation
+
+#### Phase 3: Core Calendar Intelligence
+- [ ] Natural Language Processing
+  - [ ] Parse user queries (dates, times, durations, preferences)
+  - [ ] Handle relative dates ("next Tuesday", "in 2 hours")
+  - [ ] Extract meeting details (attendees, location, title)
+- [ ] Smart Scheduling Logic
+  - [ ] Find optimal meeting slots
+  - [ ] Conflict detection and resolution
+  - [ ] Time zone handling
+  - [ ] Meeting preference learning
+
+#### Phase 4: MCP Tools Implementation
+- [ ] Calendar Query Tools
+  - [ ] `get_calendar_events` - fetch events for date ranges
+  - [ ] `check_availability` - check free/busy status
+  - [ ] `find_meeting_slots` - suggest optimal meeting times
+- [ ] Calendar Management Tools
+  - [ ] `create_event` - book new calendar events
+  - [ ] `update_event` - modify existing events
+  - [ ] `cancel_event` - remove calendar events
+  - [ ] `get_calendar_summary` - daily/weekly summaries
+
+#### Phase 5: Advanced Features
+- [ ] Intelligent Features
+  - [ ] Smart conflict resolution
+  - [ ] Meeting preparation suggestions
+  - [ ] Calendar analytics and insights
+  - [ ] Recurring event management
+- [ ] Security & Polish
+  - [ ] Input validation and sanitization
+  - [ ] Rate limiting and quota management
+  - [ ] Comprehensive error handling
+  - [ ] Unit and integration tests
+
+**Key Design Decisions:**
+- Authentication Strategy: Secure Google OAuth token handling
+- Calendar Selection: Support multiple calendars
+- Time Zone Handling: User's local time vs participants' time zones
+- Conflict Resolution: Balanced auto-booking approach
+- Privacy: Controlled calendar data exposure through MCP
+
+**Tech Stack:**
+- MCP Protocol: @modelcontextprotocol/sdk v0.4.0
+- Google Calendar: googleapis + google-auth-library
+- Azure AI: @azure/openai
+- Date/Time: date-fns + chrono-node
+- Validation: zod
+- Runtime: Node.js with TypeScript
+
+**Phase 1 Test Results ✅:**
+- Dependencies installed successfully
+- TypeScript compilation working (with relaxed settings)
+- Basic MCP server runs and responds to requests
+- Foundation ready for Phase 2 integration work
+
+**Phase 2 Implementation Results ✅:**
+- Google Calendar service with full OAuth 2.0 support implemented
+- Azure AI service with natural language processing capabilities implemented
+- MCP server updated with 8 complete calendar tools:
+  1. get_calendar_events - Fetch events for date ranges
+  2. check_availability - Check free/busy status
+  3. find_meeting_slots - AI-powered optimal slot finding
+  4. create_event - Create new calendar events
+  5. update_event - Modify existing events
+  6. cancel_event - Delete/cancel events
+  7. get_calendar_summary - Generate calendar summaries with analytics
+  8. parse_natural_query - Parse natural language calendar queries
+- All TypeScript compilation successful
+- Test server starts and runs correctly
+- Ready for Phase 3: Core Calendar Intelligence implementation

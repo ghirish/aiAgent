@@ -226,4 +226,116 @@ export class GmailError extends CalendarCopilotError {
     super(message, 'GMAIL_ERROR', 503, details);
     this.name = 'GmailError';
   }
-} 
+}
+
+// Email Monitoring Types
+export const EmailMonitorStateSchema = z.object({
+  lastChecked: z.string(), // ISO timestamp
+  processedEmails: z.set(z.string()), // Set of email IDs
+  totalEmailsProcessed: z.number(),
+  schedulingEmailsFound: z.number(),
+});
+
+export type EmailMonitorState = z.infer<typeof EmailMonitorStateSchema>;
+
+export const ProcessedEmailSchema = z.object({
+  id: z.string(),
+  subject: z.string(),
+  from: z.string(),
+  receivedAt: z.string(), // ISO timestamp
+  processedAt: z.string(), // ISO timestamp
+  hasSchedulingIntent: z.boolean(),
+  schedulingDetails: z.object({
+    proposedTimes: z.array(z.string()).optional(),
+    meetingTopic: z.string().optional(),
+    participants: z.array(z.string()).optional(),
+    urgency: z.enum(['low', 'medium', 'high']).optional(),
+    confidence: z.number().optional(),
+  }).optional(),
+  actionTaken: z.enum(['none', 'notification_sent', 'calendar_suggestion', 'auto_scheduled']).optional(),
+});
+
+export type ProcessedEmail = z.infer<typeof ProcessedEmailSchema>;
+
+export const EmailMonitoringConfigSchema = z.object({
+  enabled: z.boolean(),
+  pollingIntervalMinutes: z.number().min(1).max(60), // 1-60 minutes
+  maxEmailsPerCheck: z.number().min(1).max(100), // 1-100 emails
+  schedulingKeywords: z.array(z.string()),
+  notificationWebhookUrl: z.string().optional(),
+  autoProcessing: z.object({
+    enabled: z.boolean(),
+    confidenceThreshold: z.number().min(0).max(1), // 0-1
+    autoSuggestMeetings: z.boolean(),
+    autoCreateCalendarEvents: z.boolean(),
+  }),
+});
+
+export type EmailMonitoringConfig = z.infer<typeof EmailMonitoringConfigSchema>;
+
+export class EmailSchedulerError extends CalendarCopilotError {
+  constructor(message: string, details?: unknown) {
+    super(message, 'EMAIL_SCHEDULER_ERROR', 503, details);
+    this.name = 'EmailSchedulerError';
+  }
+}
+
+// Phase 3: Enhanced Scheduling Types
+export const SchedulingAnalysisSchema = z.object({
+  hasSchedulingIntent: z.boolean(),
+  confidence: z.number().min(0).max(1),
+  schedulingDetails: z.object({
+    proposedTimes: z.array(z.string()),
+    parsedDates: z.array(z.object({
+      original: z.string(),
+      parsed: z.date(),
+      confidence: z.number().min(0).max(1),
+    })),
+    meetingTopic: z.string(),
+    participants: z.array(z.string()),
+    urgency: z.enum(['low', 'medium', 'high']),
+    meetingType: z.enum(['one-on-one', 'team-meeting', 'interview', 'casual', 'formal']),
+    estimatedDuration: z.number().int().min(15).max(480), // 15 minutes to 8 hours
+    actionItems: z.array(z.string()),
+    responseRequired: z.boolean(),
+    calendarAvailability: z.object({
+      hasConflicts: z.boolean(),
+      suggestedAlternatives: z.array(AvailableSlotSchema).optional(),
+    }).optional(),
+  }).optional(),
+  suggestedActions: z.array(z.object({
+    type: z.enum(['create_event', 'check_availability', 'suggest_times', 'draft_response']),
+    priority: z.enum(['high', 'medium', 'low']),
+    description: z.string(),
+    data: z.any().optional(),
+  })),
+});
+
+export type SchedulingAnalysis = z.infer<typeof SchedulingAnalysisSchema>;
+
+export const EmailBatchProcessingResultSchema = z.object({
+  processed: z.number(),
+  schedulingEmails: z.number(),
+  highPriorityActions: z.number(),
+  results: z.array(z.object({
+    email: EmailSummarySchema,
+    analysis: SchedulingAnalysisSchema,
+  })),
+});
+
+export type EmailBatchProcessingResult = z.infer<typeof EmailBatchProcessingResultSchema>;
+
+// Enhanced email intent types for Phase 3
+export const EnhancedParsedQuerySchema = ParsedQuerySchema.extend({
+  intent: z.enum([
+    'schedule', 'query', 'update', 'cancel', 'availability', 
+    'email_query', 'email_search', 'email_schedule_analysis', 'email_batch_process'
+  ]),
+  schedulingContext: z.object({
+    emailId: z.string().optional(),
+    batchSize: z.number().optional(),
+    analysisDepth: z.enum(['basic', 'enhanced', 'comprehensive']).optional(),
+  }).optional(),
+});
+
+export type EnhancedParsedQuery = z.infer<typeof EnhancedParsedQuerySchema>; 

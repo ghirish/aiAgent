@@ -4,11 +4,14 @@ export declare class CalendarCopilotServer {
     private server;
     private config;
     private logger;
-    private calendarService;
-    private gmailService;
+    private googleCalendarService?;
+    private gmailService?;
+    private emailStorageService?;
+    private emailMonitorService?;
+    private emailSchedulerService?;
+    private azureAIService?;
     constructor(config: Config, logger: Logger);
     private setupHandlers;
-    private getAvailableTools;
     private handleToolCall;
     private handleGetCalendarEvents;
     private handleCheckAvailability;
@@ -20,6 +23,25 @@ export declare class CalendarCopilotServer {
     private handleGetRecentEmails;
     private handleSearchEmails;
     private handleGetUnreadEmails;
+    private handleMonitorNewEmails;
+    private handleGetEmailMonitoringStatus;
+    private handleUpdateEmailMonitoringConfig;
+    private handleGetSchedulingEmails;
+    private handleAnalyzeEmailForScheduling;
+    private handleProcessBatchEmails;
     private loadOAuthTokens;
     start(): Promise<void>;
+    initialize(config: {
+        azure: {
+            endpoint: string;
+            apiKey: string;
+            deploymentName: string;
+            apiVersion: string;
+        };
+        google: {
+            clientId: string;
+            clientSecret: string;
+            redirectUri: string;
+        };
+    }): Promise<void>;
 }

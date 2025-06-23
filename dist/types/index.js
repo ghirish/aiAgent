@@ -179,3 +179,93 @@ export class GmailError extends CalendarCopilotError {
         this.name = 'GmailError';
     }
 }
+export const EmailMonitorStateSchema = z.object({
+    lastChecked: z.string(),
+    processedEmails: z.set(z.string()),
+    totalEmailsProcessed: z.number(),
+    schedulingEmailsFound: z.number(),
+});
+export const ProcessedEmailSchema = z.object({
+    id: z.string(),
+    subject: z.string(),
+    from: z.string(),
+    receivedAt: z.string(),
+    processedAt: z.string(),
+    hasSchedulingIntent: z.boolean(),
+    schedulingDetails: z.object({
+        proposedTimes: z.array(z.string()).optional(),
+        meetingTopic: z.string().optional(),
+        participants: z.array(z.string()).optional(),
+        urgency: z.enum(['low', 'medium', 'high']).optional(),
+        confidence: z.number().optional(),
+    }).optional(),
+    actionTaken: z.enum(['none', 'notification_sent', 'calendar_suggestion', 'auto_scheduled']).optional(),
+});
+export const EmailMonitoringConfigSchema = z.object({
+    enabled: z.boolean(),
+    pollingIntervalMinutes: z.number().min(1).max(60),
+    maxEmailsPerCheck: z.number().min(1).max(100),
+    schedulingKeywords: z.array(z.string()),
+    notificationWebhookUrl: z.string().optional(),
+    autoProcessing: z.object({
+        enabled: z.boolean(),
+        confidenceThreshold: z.number().min(0).max(1),
+        autoSuggestMeetings: z.boolean(),
+        autoCreateCalendarEvents: z.boolean(),
+    }),
+});
+export class EmailSchedulerError extends CalendarCopilotError {
+    constructor(message, details) {
+        super(message, 'EMAIL_SCHEDULER_ERROR', 503, details);
+        this.name = 'EmailSchedulerError';
+    }
+}
+export const SchedulingAnalysisSchema = z.object({
+    hasSchedulingIntent: z.boolean(),
+    confidence: z.number().min(0).max(1),
+    schedulingDetails: z.object({
+        proposedTimes: z.array(z.string()),
+        parsedDates: z.array(z.object({
+            original: z.string(),
+            parsed: z.date(),
+            confidence: z.number().min(0).max(1),
+        })),
+        meetingTopic: z.string(),
+        participants: z.array(z.string()),
+        urgency: z.enum(['low', 'medium', 'high']),
+        meetingType: z.enum(['one-on-one', 'team-meeting', 'interview', 'casual', 'formal']),
+        estimatedDuration: z.number().int().min(15).max(480),
+        actionItems: z.array(z.string()),
+        responseRequired: z.boolean(),
+        calendarAvailability: z.object({
+            hasConflicts: z.boolean(),
+            suggestedAlternatives: z.array(AvailableSlotSchema).optional(),
+        }).optional(),
+    }).optional(),
+    suggestedActions: z.array(z.object({
+        type: z.enum(['create_event', 'check_availability', 'suggest_times', 'draft_response']),
+        priority: z.enum(['high', 'medium', 'low']),
+        description: z.string(),
+        data: z.any().optional(),
+    })),
+});
+export const EmailBatchProcessingResultSchema = z.object({
+    processed: z.number(),
+    schedulingEmails: z.number(),
+    highPriorityActions: z.number(),
+    results: z.array(z.object({
+        email: EmailSummarySchema,
+        analysis: SchedulingAnalysisSchema,
+    })),
+});
+export const EnhancedParsedQuerySchema = ParsedQuerySchema.extend({
+    intent: z.enum([
+        'schedule', 'query', 'update', 'cancel', 'availability',
+        'email_query', 'email_search', 'email_schedule_analysis', 'email_batch_process'
+    ]),
+    schedulingContext: z.object({
+        emailId: z.string().optional(),
+        batchSize: z.number().optional(),
+        analysisDepth: z.enum(['basic', 'enhanced', 'comprehensive']).optional(),
+    }).optional(),
+});

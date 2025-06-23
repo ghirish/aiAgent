@@ -396,8 +396,208 @@ The user is providing additional information to complete their original request.
   }
 
   /**
-   * Generate smart event suggestions based on context
+   * Phase 3 Enhanced: Analyze email content for scheduling intent
    */
+  async analyzeEmailForScheduling(emailText: string): Promise<{
+    hasSchedulingIntent: boolean;
+    confidence: number;
+    details?: {
+      proposedTimes?: string[];
+      meetingTopic?: string;
+      participants?: string[];
+      urgency?: 'low' | 'medium' | 'high';
+      meetingType?: 'one-on-one' | 'team-meeting' | 'interview' | 'casual' | 'formal';
+      estimatedDuration?: number;
+      actionItems?: string[];
+      responseRequired?: boolean;
+      confidence?: number;
+    };
+  }> {
+    const enhancedPrompt = `Analyze this email for scheduling/meeting intent with comprehensive extraction.
+
+Email:
+${emailText}
+
+Perform deep analysis and extract:
+1. Does this email contain a request to schedule, reschedule, or discuss scheduling a meeting/call/appointment?
+2. What is your confidence level (0-1)?
+3. Extract all time/date references (preserve exact phrasing)
+4. Identify the main meeting topic/purpose
+5. Extract participant names/emails mentioned
+6. Assess urgency based on language (urgent, ASAP, soon, etc.)
+7. Determine meeting type and formality level
+8. Estimate appropriate meeting duration based on topic
+9. Extract any action items or deadlines mentioned
+10. Does this email require a response?
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "hasSchedulingIntent": boolean,
+  "confidence": number,
+  "proposedTimes": ["exact phrase 1", "exact phrase 2"],
+  "meetingTopic": "extracted topic or null",
+  "participants": ["email1", "name2"],
+  "urgency": "low|medium|high",
+  "meetingType": "one-on-one|team-meeting|interview|casual|formal",
+  "estimatedDuration": number_in_minutes,
+  "actionItems": ["action1", "action2"],
+  "responseRequired": boolean
+}
+
+Key scheduling indicators:
+- Direct: "schedule a meeting", "book time", "set up a call"
+- Indirect: "when are you free?", "available this week?", "catch up"
+- Rescheduling: "move our meeting", "change the time", "reschedule"
+- Time references: "tomorrow", "next week", "Monday at 2pm", "this afternoon"`;
+
+    try {
+      const response = await this.openai.getChatCompletions(
+        this.deploymentName,
+        [{ role: 'user', content: enhancedPrompt }],
+        {
+          temperature: 0.2, // Very low for consistent structured output
+          maxTokens: 600,
+          frequencyPenalty: 0,
+          presencePenalty: 0,
+        }
+      );
+
+      const aiResponse = response.choices[0]?.message?.content;
+      if (!aiResponse) {
+        throw new Error('No response from Azure AI');
+      }
+
+      // Clean the response to ensure valid JSON
+      const cleanedResponse = aiResponse.trim();
+      let jsonStart = cleanedResponse.indexOf('{');
+      let jsonEnd = cleanedResponse.lastIndexOf('}');
+      
+      if (jsonStart === -1 || jsonEnd === -1) {
+        throw new Error('Invalid JSON response format');
+      }
+
+      const jsonString = cleanedResponse.substring(jsonStart, jsonEnd + 1);
+      const analysis = JSON.parse(jsonString);
+      
+             // Validate and sanitize the response
+       const confidence = Math.min(Math.max(Number(analysis.confidence) || 0, 0), 1);
+       const sanitizedAnalysis = {
+         hasSchedulingIntent: Boolean(analysis.hasSchedulingIntent),
+         confidence,
+         proposedTimes: Array.isArray(analysis.proposedTimes) ? analysis.proposedTimes : [],
+         meetingTopic: typeof analysis.meetingTopic === 'string' ? analysis.meetingTopic : null,
+         participants: Array.isArray(analysis.participants) ? analysis.participants : [],
+         urgency: ['low', 'medium', 'high'].includes(analysis.urgency) ? analysis.urgency : 'medium',
+         meetingType: ['one-on-one', 'team-meeting', 'interview', 'casual', 'formal'].includes(analysis.meetingType) ? 
+           analysis.meetingType : 'one-on-one',
+         estimatedDuration: Math.min(Math.max(Number(analysis.estimatedDuration) || 60, 15), 480),
+         actionItems: Array.isArray(analysis.actionItems) ? analysis.actionItems : [],
+         responseRequired: Boolean(analysis.responseRequired),
+       };
+      
+      return {
+        hasSchedulingIntent: sanitizedAnalysis.hasSchedulingIntent,
+        confidence: sanitizedAnalysis.confidence,
+        details: sanitizedAnalysis.hasSchedulingIntent ? sanitizedAnalysis : undefined,
+      };
+
+    } catch (error) {
+      this.logger.error('Azure AI email analysis failed:', error);
+      
+      // Enhanced fallback analysis
+      return this.fallbackEmailAnalysis(emailText);
+    }
+  }
+
+  /**
+   * Enhanced fallback email analysis using pattern matching
+   */
+  private fallbackEmailAnalysis(emailText: string): {
+    hasSchedulingIntent: boolean;
+    confidence: number;
+    details?: any;
+  } {
+    const text = emailText.toLowerCase();
+    
+    // Enhanced scheduling keywords with weights
+    const schedulingPatterns = [
+      { pattern: /schedule|scheduling/, weight: 0.3 },
+      { pattern: /meeting|meet/, weight: 0.3 },
+      { pattern: /appointment|appt/, weight: 0.3 },
+      { pattern: /call|calling/, weight: 0.25 },
+      { pattern: /available|availability/, weight: 0.25 },
+      { pattern: /free time|free/, weight: 0.2 },
+      { pattern: /calendar/, weight: 0.25 },
+      { pattern: /book|booking/, weight: 0.25 },
+      { pattern: /reschedule|rescheduling/, weight: 0.35 },
+      { pattern: /catch up|sync/, weight: 0.2 },
+      { pattern: /discussion|discuss/, weight: 0.15 },
+      { pattern: /interview/, weight: 0.3 },
+    ];
+
+    // Time expression patterns
+    const timePatterns = [
+      /today|tomorrow|tonight/,
+      /next week|this week|next month/,
+      /monday|tuesday|wednesday|thursday|friday|saturday|sunday/,
+      /morning|afternoon|evening|night/,
+      /\d{1,2}:\d{2}|am|pm/,
+      /\d{1,2}\s*(am|pm)/,
+    ];
+
+    // Question patterns that indicate scheduling intent
+    const questionPatterns = [
+      /when are you|when would you/,
+      /are you free|are you available/,
+      /does.*work for you|work for you/,
+      /what time|what day/,
+      /can we|could we.*meet/,
+    ];
+
+    let confidence = 0;
+    
+    // Check scheduling patterns
+    schedulingPatterns.forEach(({ pattern, weight }) => {
+      if (pattern.test(text)) {
+        confidence += weight;
+      }
+    });
+
+    // Check time patterns
+    const hasTimeReferences = timePatterns.some(pattern => pattern.test(text));
+    if (hasTimeReferences) {
+      confidence += 0.3;
+    }
+
+    // Check question patterns
+    const hasSchedulingQuestions = questionPatterns.some(pattern => pattern.test(text));
+    if (hasSchedulingQuestions) {
+      confidence += 0.4;
+    }
+
+    // Urgency detection
+    const urgencyPatterns = /urgent|asap|as soon as possible|immediately|emergency/;
+    const urgency = urgencyPatterns.test(text) ? 'high' : 'medium';
+
+    const hasSchedulingIntent = confidence > 0.4;
+    
+    return {
+      hasSchedulingIntent,
+      confidence: Math.min(confidence, 1),
+      details: hasSchedulingIntent ? {
+        proposedTimes: hasTimeReferences ? ['time mentioned in email'] : [],
+        meetingTopic: 'Meeting discussion',
+        participants: [],
+        urgency,
+        meetingType: 'one-on-one',
+        estimatedDuration: 60,
+        actionItems: [],
+        responseRequired: hasSchedulingQuestions,
+        confidence: Math.min(confidence, 1),
+      } : undefined,
+    };
+  }
+
   async generateEventSuggestions(
     query: string,
     context?: {

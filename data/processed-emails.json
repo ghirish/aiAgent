@@ -1,0 +1,96 @@
+{
+  "test_001": {
+    "id": "test_001",
+    "subject": "Team standup reschedule",
+    "from": "manager@company.com",
+    "receivedAt": "2025-06-23T06:16:03.370Z",
+    "processedAt": "2025-06-23T06:16:03.370Z",
+    "hasSchedulingIntent": true,
+    "schedulingDetails": {
+      "proposedTimes": [
+        "tomorrow at 10 AM"
+      ],
+      "meetingTopic": "Team standup",
+      "participants": [
+        "manager@company.com"
+      ],
+      "urgency": "medium",
+      "confidence": 0.92
+    },
+    "actionTaken": "calendar_suggestion"
+  },
+  "test_002": {
+    "id": "test_002",
+    "subject": "Quarterly review preparation",
+    "from": "hr@company.com",
+    "receivedAt": "2025-06-23T06:16:03.370Z",
+    "processedAt": "2025-06-23T06:16:03.370Z",
+    "hasSchedulingIntent": false,
+    "actionTaken": "none"
+  },
+  "test_003": {
+    "id": "test_003",
+    "subject": "Coffee meeting next week?",
+    "from": "colleague@company.com",
+    "receivedAt": "2025-06-23T06:16:03.370Z",
+    "processedAt": "2025-06-23T06:16:03.370Z",
+    "hasSchedulingIntent": true,
+    "schedulingDetails": {
+      "proposedTimes": [
+        "next week"
+      ],
+      "meetingTopic": "Coffee meeting",
+      "participants": [
+        "colleague@company.com"
+      ],
+      "urgency": "low",
+      "confidence": 0.78
+    },
+    "actionTaken": "calendar_suggestion"
+  },
+  "19797bd8bc77aa17": {
+    "id": "19797bd8bc77aa17",
+    "subject": "15% off ends tonight",
+    "from": "\"H&M\" <newsletter@email.hm.com>",
+    "receivedAt": "Sun, 22 Jun 2025 15:04:12 +0200",
+    "processedAt": "2025-06-23T06:17:28.281Z",
+    "hasSchedulingIntent": false,
+    "actionTaken": "none"
+  },
+  "19797bd8926a8aba": {
+    "id": "19797bd8926a8aba",
+    "subject": "Medpace just posted a 77% match Junior Software Engineer role 1 hour ago",
+    "from": "Jobright <noreply@jobright.ai>",
+    "receivedAt": "Sun, 22 Jun 2025 13:04:27 +0000",
+    "processedAt": "2025-06-23T06:17:28.283Z",
+    "hasSchedulingIntent": false,
+    "actionTaken": "none"
+  },
+  "1979523e6bc14b47": {
+    "id": "1979523e6bc14b47",
+    "subject": "Re: Campus Power Outrage Saturday Jun 21 @ 3:58 pm - 4:19 pm",
+    "from": "Nicholas Santucci <santucci@uci.edu>",
+    "receivedAt": "Sat, 21 Jun 2025 17:50:01 -0700",
+    "processedAt": "2025-06-23T06:17:28.283Z",
+    "hasSchedulingIntent": false,
+    "actionTaken": "none"
+  },
+  "19795211bd71cf73": {
+    "id": "19795211bd71cf73",
+    "subject": "Campus Power Outrage Saturday Jun 21 @ 3:58 pm - 4:19 pm",
+    "from": "Nicholas Santucci <santucci@uci.edu>",
+    "receivedAt": "Sat, 21 Jun 2025 17:48:05 -0700",
+    "processedAt": "2025-06-23T06:17:28.283Z",
+    "hasSchedulingIntent": false,
+    "actionTaken": "none"
+  },
+  "19794b0cc5ef31ef": {
+    "id": "19794b0cc5ef31ef",
+    "subject": "touch some grass (this is a PSA)",
+    "from": "The Student Buzz <studentbuzz@thestudentbuzz.com>",
+    "receivedAt": "Sat, 21 Jun 2025 22:50:26 +0000 (UTC)",
+    "processedAt": "2025-06-23T06:17:28.284Z",
+    "hasSchedulingIntent": false,
+    "actionTaken": "none"
+  }
+}

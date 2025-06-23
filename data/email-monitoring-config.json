@@ -1,0 +1,28 @@
+{
+  "enabled": true,
+  "pollingIntervalMinutes": 3,
+  "maxEmailsPerCheck": 20,
+  "schedulingKeywords": [
+    "meeting",
+    "schedule",
+    "appointment",
+    "call",
+    "conference",
+    "available",
+    "free time",
+    "book",
+    "calendar",
+    "time slot",
+    "discussion",
+    "sync",
+    "standup",
+    "review",
+    "interview"
+  ],
+  "autoProcessing": {
+    "enabled": true,
+    "confidenceThreshold": 0.7,
+    "autoSuggestMeetings": true,
+    "autoCreateCalendarEvents": false
+  }
+}

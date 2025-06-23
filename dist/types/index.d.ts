@@ -629,3 +629,869 @@ export type EmailSummary = z.infer<typeof EmailSummarySchema>;
 export declare class GmailError extends CalendarCopilotError {
     constructor(message: string, details?: unknown);
 }
+export declare const EmailMonitorStateSchema: z.ZodObject<{
+    lastChecked: z.ZodString;
+    processedEmails: z.ZodSet<z.ZodString>;
+    totalEmailsProcessed: z.ZodNumber;
+    schedulingEmailsFound: z.ZodNumber;
+}, "strip", z.ZodTypeAny, {
+    lastChecked?: string;
+    processedEmails?: Set<string>;
+    totalEmailsProcessed?: number;
+    schedulingEmailsFound?: number;
+}, {
+    lastChecked?: string;
+    processedEmails?: Set<string>;
+    totalEmailsProcessed?: number;
+    schedulingEmailsFound?: number;
+}>;
+export type EmailMonitorState = z.infer<typeof EmailMonitorStateSchema>;
+export declare const ProcessedEmailSchema: z.ZodObject<{
+    id: z.ZodString;
+    subject: z.ZodString;
+    from: z.ZodString;
+    receivedAt: z.ZodString;
+    processedAt: z.ZodString;
+    hasSchedulingIntent: z.ZodBoolean;
+    schedulingDetails: z.ZodOptional<z.ZodObject<{
+        proposedTimes: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+        meetingTopic: z.ZodOptional<z.ZodString>;
+        participants: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+        urgency: z.ZodOptional<z.ZodEnum<["low", "medium", "high"]>>;
+        confidence: z.ZodOptional<z.ZodNumber>;
+    }, "strip", z.ZodTypeAny, {
+        confidence?: number;
+        proposedTimes?: string[];
+        meetingTopic?: string;
+        participants?: string[];
+        urgency?: "low" | "medium" | "high";
+    }, {
+        confidence?: number;
+        proposedTimes?: string[];
+        meetingTopic?: string;
+        participants?: string[];
+        urgency?: "low" | "medium" | "high";
+    }>>;
+    actionTaken: z.ZodOptional<z.ZodEnum<["none", "notification_sent", "calendar_suggestion", "auto_scheduled"]>>;
+}, "strip", z.ZodTypeAny, {
+    id?: string;
+    subject?: string;
+    from?: string;
+    hasSchedulingIntent?: boolean;
+    schedulingDetails?: {
+        confidence?: number;
+        proposedTimes?: string[];
+        meetingTopic?: string;
+        participants?: string[];
+        urgency?: "low" | "medium" | "high";
+    };
+    receivedAt?: string;
+    processedAt?: string;
+    actionTaken?: "none" | "notification_sent" | "calendar_suggestion" | "auto_scheduled";
+}, {
+    id?: string;
+    subject?: string;
+    from?: string;
+    hasSchedulingIntent?: boolean;
+    schedulingDetails?: {
+        confidence?: number;
+        proposedTimes?: string[];
+        meetingTopic?: string;
+        participants?: string[];
+        urgency?: "low" | "medium" | "high";
+    };
+    receivedAt?: string;
+    processedAt?: string;
+    actionTaken?: "none" | "notification_sent" | "calendar_suggestion" | "auto_scheduled";
+}>;
+export type ProcessedEmail = z.infer<typeof ProcessedEmailSchema>;
+export declare const EmailMonitoringConfigSchema: z.ZodObject<{
+    enabled: z.ZodBoolean;
+    pollingIntervalMinutes: z.ZodNumber;
+    maxEmailsPerCheck: z.ZodNumber;
+    schedulingKeywords: z.ZodArray<z.ZodString, "many">;
+    notificationWebhookUrl: z.ZodOptional<z.ZodString>;
+    autoProcessing: z.ZodObject<{
+        enabled: z.ZodBoolean;
+        confidenceThreshold: z.ZodNumber;
+        autoSuggestMeetings: z.ZodBoolean;
+        autoCreateCalendarEvents: z.ZodBoolean;
+    }, "strip", z.ZodTypeAny, {
+        enabled?: boolean;
+        confidenceThreshold?: number;
+        autoSuggestMeetings?: boolean;
+        autoCreateCalendarEvents?: boolean;
+    }, {
+        enabled?: boolean;
+        confidenceThreshold?: number;
+        autoSuggestMeetings?: boolean;
+        autoCreateCalendarEvents?: boolean;
+    }>;
+}, "strip", z.ZodTypeAny, {
+    enabled?: boolean;
+    pollingIntervalMinutes?: number;
+    maxEmailsPerCheck?: number;
+    schedulingKeywords?: string[];
+    notificationWebhookUrl?: string;
+    autoProcessing?: {
+        enabled?: boolean;
+        confidenceThreshold?: number;
+        autoSuggestMeetings?: boolean;
+        autoCreateCalendarEvents?: boolean;
+    };
+}, {
+    enabled?: boolean;
+    pollingIntervalMinutes?: number;
+    maxEmailsPerCheck?: number;
+    schedulingKeywords?: string[];
+    notificationWebhookUrl?: string;
+    autoProcessing?: {
+        enabled?: boolean;
+        confidenceThreshold?: number;
+        autoSuggestMeetings?: boolean;
+        autoCreateCalendarEvents?: boolean;
+    };
+}>;
+export type EmailMonitoringConfig = z.infer<typeof EmailMonitoringConfigSchema>;
+export declare class EmailSchedulerError extends CalendarCopilotError {
+    constructor(message: string, details?: unknown);
+}
+export declare const SchedulingAnalysisSchema: z.ZodObject<{
+    hasSchedulingIntent: z.ZodBoolean;
+    confidence: z.ZodNumber;
+    schedulingDetails: z.ZodOptional<z.ZodObject<{
+        proposedTimes: z.ZodArray<z.ZodString, "many">;
+        parsedDates: z.ZodArray<z.ZodObject<{
+            original: z.ZodString;
+            parsed: z.ZodDate;
+            confidence: z.ZodNumber;
+        }, "strip", z.ZodTypeAny, {
+            confidence?: number;
+            original?: string;
+            parsed?: Date;
+        }, {
+            confidence?: number;
+            original?: string;
+            parsed?: Date;
+        }>, "many">;
+        meetingTopic: z.ZodString;
+        participants: z.ZodArray<z.ZodString, "many">;
+        urgency: z.ZodEnum<["low", "medium", "high"]>;
+        meetingType: z.ZodEnum<["one-on-one", "team-meeting", "interview", "casual", "formal"]>;
+        estimatedDuration: z.ZodNumber;
+        actionItems: z.ZodArray<z.ZodString, "many">;
+        responseRequired: z.ZodBoolean;
+        calendarAvailability: z.ZodOptional<z.ZodObject<{
+            hasConflicts: z.ZodBoolean;
+            suggestedAlternatives: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                start: z.ZodString;
+                end: z.ZodString;
+                duration: z.ZodNumber;
+                confidence: z.ZodNumber;
+            }, "strip", z.ZodTypeAny, {
+                start?: string;
+                end?: string;
+                duration?: number;
+                confidence?: number;
+            }, {
+                start?: string;
+                end?: string;
+                duration?: number;
+                confidence?: number;
+            }>, "many">>;
+        }, "strip", z.ZodTypeAny, {
+            hasConflicts?: boolean;
+            suggestedAlternatives?: {
+                start?: string;
+                end?: string;
+                duration?: number;
+                confidence?: number;
+            }[];
+        }, {
+            hasConflicts?: boolean;
+            suggestedAlternatives?: {
+                start?: string;
+                end?: string;
+                duration?: number;
+                confidence?: number;
+            }[];
+        }>>;
+    }, "strip", z.ZodTypeAny, {
+        proposedTimes?: string[];
+        meetingTopic?: string;
+        participants?: string[];
+        urgency?: "low" | "medium" | "high";
+        parsedDates?: {
+            confidence?: number;
+            original?: string;
+            parsed?: Date;
+        }[];
+        meetingType?: "one-on-one" | "team-meeting" | "interview" | "casual" | "formal";
+        estimatedDuration?: number;
+        actionItems?: string[];
+        responseRequired?: boolean;
+        calendarAvailability?: {
+            hasConflicts?: boolean;
+            suggestedAlternatives?: {
+                start?: string;
+                end?: string;
+                duration?: number;
+                confidence?: number;
+            }[];
+        };
+    }, {
+        proposedTimes?: string[];
+        meetingTopic?: string;
+        participants?: string[];
+        urgency?: "low" | "medium" | "high";
+        parsedDates?: {
+            confidence?: number;
+            original?: string;
+            parsed?: Date;
+        }[];
+        meetingType?: "one-on-one" | "team-meeting" | "interview" | "casual" | "formal";
+        estimatedDuration?: number;
+        actionItems?: string[];
+        responseRequired?: boolean;
+        calendarAvailability?: {
+            hasConflicts?: boolean;
+            suggestedAlternatives?: {
+                start?: string;
+                end?: string;
+                duration?: number;
+                confidence?: number;
+            }[];
+        };
+    }>>;
+    suggestedActions: z.ZodArray<z.ZodObject<{
+        type: z.ZodEnum<["create_event", "check_availability", "suggest_times", "draft_response"]>;
+        priority: z.ZodEnum<["high", "medium", "low"]>;
+        description: z.ZodString;
+        data: z.ZodOptional<z.ZodAny>;
+    }, "strip", z.ZodTypeAny, {
+        type?: "create_event" | "check_availability" | "suggest_times" | "draft_response";
+        description?: string;
+        data?: any;
+        priority?: "low" | "medium" | "high";
+    }, {
+        type?: "create_event" | "check_availability" | "suggest_times" | "draft_response";
+        description?: string;
+        data?: any;
+        priority?: "low" | "medium" | "high";
+    }>, "many">;
+}, "strip", z.ZodTypeAny, {
+    confidence?: number;
+    hasSchedulingIntent?: boolean;
+    schedulingDetails?: {
+        proposedTimes?: string[];
+        meetingTopic?: string;
+        participants?: string[];
+        urgency?: "low" | "medium" | "high";
+        parsedDates?: {
+            confidence?: number;
+            original?: string;
+            parsed?: Date;
+        }[];
+        meetingType?: "one-on-one" | "team-meeting" | "interview" | "casual" | "formal";
+        estimatedDuration?: number;
+        actionItems?: string[];
+        responseRequired?: boolean;
+        calendarAvailability?: {
+            hasConflicts?: boolean;
+            suggestedAlternatives?: {
+                start?: string;
+                end?: string;
+                duration?: number;
+                confidence?: number;
+            }[];
+        };
+    };
+    suggestedActions?: {
+        type?: "create_event" | "check_availability" | "suggest_times" | "draft_response";
+        description?: string;
+        data?: any;
+        priority?: "low" | "medium" | "high";
+    }[];
+}, {
+    confidence?: number;
+    hasSchedulingIntent?: boolean;
+    schedulingDetails?: {
+        proposedTimes?: string[];
+        meetingTopic?: string;
+        participants?: string[];
+        urgency?: "low" | "medium" | "high";
+        parsedDates?: {
+            confidence?: number;
+            original?: string;
+            parsed?: Date;
+        }[];
+        meetingType?: "one-on-one" | "team-meeting" | "interview" | "casual" | "formal";
+        estimatedDuration?: number;
+        actionItems?: string[];
+        responseRequired?: boolean;
+        calendarAvailability?: {
+            hasConflicts?: boolean;
+            suggestedAlternatives?: {
+                start?: string;
+                end?: string;
+                duration?: number;
+                confidence?: number;
+            }[];
+        };
+    };
+    suggestedActions?: {
+        type?: "create_event" | "check_availability" | "suggest_times" | "draft_response";
+        description?: string;
+        data?: any;
+        priority?: "low" | "medium" | "high";
+    }[];
+}>;
+export type SchedulingAnalysis = z.infer<typeof SchedulingAnalysisSchema>;
+export declare const EmailBatchProcessingResultSchema: z.ZodObject<{
+    processed: z.ZodNumber;
+    schedulingEmails: z.ZodNumber;
+    highPriorityActions: z.ZodNumber;
+    results: z.ZodArray<z.ZodObject<{
+        email: z.ZodObject<{
+            id: z.ZodString;
+            subject: z.ZodString;
+            from: z.ZodString;
+            to: z.ZodArray<z.ZodString, "many">;
+            date: z.ZodString;
+            snippet: z.ZodString;
+            body: z.ZodOptional<z.ZodString>;
+            isUnread: z.ZodBoolean;
+            hasSchedulingIntent: z.ZodOptional<z.ZodBoolean>;
+            schedulingDetails: z.ZodOptional<z.ZodObject<{
+                proposedTimes: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                meetingTopic: z.ZodOptional<z.ZodString>;
+                participants: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                urgency: z.ZodOptional<z.ZodEnum<["low", "medium", "high"]>>;
+            }, "strip", z.ZodTypeAny, {
+                proposedTimes?: string[];
+                meetingTopic?: string;
+                participants?: string[];
+                urgency?: "low" | "medium" | "high";
+            }, {
+                proposedTimes?: string[];
+                meetingTopic?: string;
+                participants?: string[];
+                urgency?: "low" | "medium" | "high";
+            }>>;
+        }, "strip", z.ZodTypeAny, {
+            date?: string;
+            id?: string;
+            snippet?: string;
+            body?: string;
+            subject?: string;
+            from?: string;
+            to?: string[];
+            isUnread?: boolean;
+            hasSchedulingIntent?: boolean;
+            schedulingDetails?: {
+                proposedTimes?: string[];
+                meetingTopic?: string;
+                participants?: string[];
+                urgency?: "low" | "medium" | "high";
+            };
+        }, {
+            date?: string;
+            id?: string;
+            snippet?: string;
+            body?: string;
+            subject?: string;
+            from?: string;
+            to?: string[];
+            isUnread?: boolean;
+            hasSchedulingIntent?: boolean;
+            schedulingDetails?: {
+                proposedTimes?: string[];
+                meetingTopic?: string;
+                participants?: string[];
+                urgency?: "low" | "medium" | "high";
+            };
+        }>;
+        analysis: z.ZodObject<{
+            hasSchedulingIntent: z.ZodBoolean;
+            confidence: z.ZodNumber;
+            schedulingDetails: z.ZodOptional<z.ZodObject<{
+                proposedTimes: z.ZodArray<z.ZodString, "many">;
+                parsedDates: z.ZodArray<z.ZodObject<{
+                    original: z.ZodString;
+                    parsed: z.ZodDate;
+                    confidence: z.ZodNumber;
+                }, "strip", z.ZodTypeAny, {
+                    confidence?: number;
+                    original?: string;
+                    parsed?: Date;
+                }, {
+                    confidence?: number;
+                    original?: string;
+                    parsed?: Date;
+                }>, "many">;
+                meetingTopic: z.ZodString;
+                participants: z.ZodArray<z.ZodString, "many">;
+                urgency: z.ZodEnum<["low", "medium", "high"]>;
+                meetingType: z.ZodEnum<["one-on-one", "team-meeting", "interview", "casual", "formal"]>;
+                estimatedDuration: z.ZodNumber;
+                actionItems: z.ZodArray<z.ZodString, "many">;
+                responseRequired: z.ZodBoolean;
+                calendarAvailability: z.ZodOptional<z.ZodObject<{
+                    hasConflicts: z.ZodBoolean;
+                    suggestedAlternatives: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                        start: z.ZodString;
+                        end: z.ZodString;
+                        duration: z.ZodNumber;
+                        confidence: z.ZodNumber;
+                    }, "strip", z.ZodTypeAny, {
+                        start?: string;
+                        end?: string;
+                        duration?: number;
+                        confidence?: number;
+                    }, {
+                        start?: string;
+                        end?: string;
+                        duration?: number;
+                        confidence?: number;
+                    }>, "many">>;
+                }, "strip", z.ZodTypeAny, {
+                    hasConflicts?: boolean;
+                    suggestedAlternatives?: {
+                        start?: string;
+                        end?: string;
+                        duration?: number;
+                        confidence?: number;
+                    }[];
+                }, {
+                    hasConflicts?: boolean;
+                    suggestedAlternatives?: {
+                        start?: string;
+                        end?: string;
+                        duration?: number;
+                        confidence?: number;
+                    }[];
+                }>>;
+            }, "strip", z.ZodTypeAny, {
+                proposedTimes?: string[];
+                meetingTopic?: string;
+                participants?: string[];
+                urgency?: "low" | "medium" | "high";
+                parsedDates?: {
+                    confidence?: number;
+                    original?: string;
+                    parsed?: Date;
+                }[];
+                meetingType?: "one-on-one" | "team-meeting" | "interview" | "casual" | "formal";
+                estimatedDuration?: number;
+                actionItems?: string[];
+                responseRequired?: boolean;
+                calendarAvailability?: {
+                    hasConflicts?: boolean;
+                    suggestedAlternatives?: {
+                        start?: string;
+                        end?: string;
+                        duration?: number;
+                        confidence?: number;
+                    }[];
+                };
+            }, {
+                proposedTimes?: string[];
+                meetingTopic?: string;
+                participants?: string[];
+                urgency?: "low" | "medium" | "high";
+                parsedDates?: {
+                    confidence?: number;
+                    original?: string;
+                    parsed?: Date;
+                }[];
+                meetingType?: "one-on-one" | "team-meeting" | "interview" | "casual" | "formal";
+                estimatedDuration?: number;
+                actionItems?: string[];
+                responseRequired?: boolean;
+                calendarAvailability?: {
+                    hasConflicts?: boolean;
+                    suggestedAlternatives?: {
+                        start?: string;
+                        end?: string;
+                        duration?: number;
+                        confidence?: number;
+                    }[];
+                };
+            }>>;
+            suggestedActions: z.ZodArray<z.ZodObject<{
+                type: z.ZodEnum<["create_event", "check_availability", "suggest_times", "draft_response"]>;
+                priority: z.ZodEnum<["high", "medium", "low"]>;
+                description: z.ZodString;
+                data: z.ZodOptional<z.ZodAny>;
+            }, "strip", z.ZodTypeAny, {
+                type?: "create_event" | "check_availability" | "suggest_times" | "draft_response";
+                description?: string;
+                data?: any;
+                priority?: "low" | "medium" | "high";
+            }, {
+                type?: "create_event" | "check_availability" | "suggest_times" | "draft_response";
+                description?: string;
+                data?: any;
+                priority?: "low" | "medium" | "high";
+            }>, "many">;
+        }, "strip", z.ZodTypeAny, {
+            confidence?: number;
+            hasSchedulingIntent?: boolean;
+            schedulingDetails?: {
+                proposedTimes?: string[];
+                meetingTopic?: string;
+                participants?: string[];
+                urgency?: "low" | "medium" | "high";
+                parsedDates?: {
+                    confidence?: number;
+                    original?: string;
+                    parsed?: Date;
+                }[];
+                meetingType?: "one-on-one" | "team-meeting" | "interview" | "casual" | "formal";
+                estimatedDuration?: number;
+                actionItems?: string[];
+                responseRequired?: boolean;
+                calendarAvailability?: {
+                    hasConflicts?: boolean;
+                    suggestedAlternatives?: {
+                        start?: string;
+                        end?: string;
+                        duration?: number;
+                        confidence?: number;
+                    }[];
+                };
+            };
+            suggestedActions?: {
+                type?: "create_event" | "check_availability" | "suggest_times" | "draft_response";
+                description?: string;
+                data?: any;
+                priority?: "low" | "medium" | "high";
+            }[];
+        }, {
+            confidence?: number;
+            hasSchedulingIntent?: boolean;
+            schedulingDetails?: {
+                proposedTimes?: string[];
+                meetingTopic?: string;
+                participants?: string[];
+                urgency?: "low" | "medium" | "high";
+                parsedDates?: {
+                    confidence?: number;
+                    original?: string;
+                    parsed?: Date;
+                }[];
+                meetingType?: "one-on-one" | "team-meeting" | "interview" | "casual" | "formal";
+                estimatedDuration?: number;
+                actionItems?: string[];
+                responseRequired?: boolean;
+                calendarAvailability?: {
+                    hasConflicts?: boolean;
+                    suggestedAlternatives?: {
+                        start?: string;
+                        end?: string;
+                        duration?: number;
+                        confidence?: number;
+                    }[];
+                };
+            };
+            suggestedActions?: {
+                type?: "create_event" | "check_availability" | "suggest_times" | "draft_response";
+                description?: string;
+                data?: any;
+                priority?: "low" | "medium" | "high";
+            }[];
+        }>;
+    }, "strip", z.ZodTypeAny, {
+        email?: {
+            date?: string;
+            id?: string;
+            snippet?: string;
+            body?: string;
+            subject?: string;
+            from?: string;
+            to?: string[];
+            isUnread?: boolean;
+            hasSchedulingIntent?: boolean;
+            schedulingDetails?: {
+                proposedTimes?: string[];
+                meetingTopic?: string;
+                participants?: string[];
+                urgency?: "low" | "medium" | "high";
+            };
+        };
+        analysis?: {
+            confidence?: number;
+            hasSchedulingIntent?: boolean;
+            schedulingDetails?: {
+                proposedTimes?: string[];
+                meetingTopic?: string;
+                participants?: string[];
+                urgency?: "low" | "medium" | "high";
+                parsedDates?: {
+                    confidence?: number;
+                    original?: string;
+                    parsed?: Date;
+                }[];
+                meetingType?: "one-on-one" | "team-meeting" | "interview" | "casual" | "formal";
+                estimatedDuration?: number;
+                actionItems?: string[];
+                responseRequired?: boolean;
+                calendarAvailability?: {
+                    hasConflicts?: boolean;
+                    suggestedAlternatives?: {
+                        start?: string;
+                        end?: string;
+                        duration?: number;
+                        confidence?: number;
+                    }[];
+                };
+            };
+            suggestedActions?: {
+                type?: "create_event" | "check_availability" | "suggest_times" | "draft_response";
+                description?: string;
+                data?: any;
+                priority?: "low" | "medium" | "high";
+            }[];
+        };
+    }, {
+        email?: {
+            date?: string;
+            id?: string;
+            snippet?: string;
+            body?: string;
+            subject?: string;
+            from?: string;
+            to?: string[];
+            isUnread?: boolean;
+            hasSchedulingIntent?: boolean;
+            schedulingDetails?: {
+                proposedTimes?: string[];
+                meetingTopic?: string;
+                participants?: string[];
+                urgency?: "low" | "medium" | "high";
+            };
+        };
+        analysis?: {
+            confidence?: number;
+            hasSchedulingIntent?: boolean;
+            schedulingDetails?: {
+                proposedTimes?: string[];
+                meetingTopic?: string;
+                participants?: string[];
+                urgency?: "low" | "medium" | "high";
+                parsedDates?: {
+                    confidence?: number;
+                    original?: string;
+                    parsed?: Date;
+                }[];
+                meetingType?: "one-on-one" | "team-meeting" | "interview" | "casual" | "formal";
+                estimatedDuration?: number;
+                actionItems?: string[];
+                responseRequired?: boolean;
+                calendarAvailability?: {
+                    hasConflicts?: boolean;
+                    suggestedAlternatives?: {
+                        start?: string;
+                        end?: string;
+                        duration?: number;
+                        confidence?: number;
+                    }[];
+                };
+            };
+            suggestedActions?: {
+                type?: "create_event" | "check_availability" | "suggest_times" | "draft_response";
+                description?: string;
+                data?: any;
+                priority?: "low" | "medium" | "high";
+            }[];
+        };
+    }>, "many">;
+}, "strip", z.ZodTypeAny, {
+    processed?: number;
+    schedulingEmails?: number;
+    highPriorityActions?: number;
+    results?: {
+        email?: {
+            date?: string;
+            id?: string;
+            snippet?: string;
+            body?: string;
+            subject?: string;
+            from?: string;
+            to?: string[];
+            isUnread?: boolean;
+            hasSchedulingIntent?: boolean;
+            schedulingDetails?: {
+                proposedTimes?: string[];
+                meetingTopic?: string;
+                participants?: string[];
+                urgency?: "low" | "medium" | "high";
+            };
+        };
+        analysis?: {
+            confidence?: number;
+            hasSchedulingIntent?: boolean;
+            schedulingDetails?: {
+                proposedTimes?: string[];
+                meetingTopic?: string;
+                participants?: string[];
+                urgency?: "low" | "medium" | "high";
+                parsedDates?: {
+                    confidence?: number;
+                    original?: string;
+                    parsed?: Date;
+                }[];
+                meetingType?: "one-on-one" | "team-meeting" | "interview" | "casual" | "formal";
+                estimatedDuration?: number;
+                actionItems?: string[];
+                responseRequired?: boolean;
+                calendarAvailability?: {
+                    hasConflicts?: boolean;
+                    suggestedAlternatives?: {
+                        start?: string;
+                        end?: string;
+                        duration?: number;
+                        confidence?: number;
+                    }[];
+                };
+            };
+            suggestedActions?: {
+                type?: "create_event" | "check_availability" | "suggest_times" | "draft_response";
+                description?: string;
+                data?: any;
+                priority?: "low" | "medium" | "high";
+            }[];
+        };
+    }[];
+}, {
+    processed?: number;
+    schedulingEmails?: number;
+    highPriorityActions?: number;
+    results?: {
+        email?: {
+            date?: string;
+            id?: string;
+            snippet?: string;
+            body?: string;
+            subject?: string;
+            from?: string;
+            to?: string[];
+            isUnread?: boolean;
+            hasSchedulingIntent?: boolean;
+            schedulingDetails?: {
+                proposedTimes?: string[];
+                meetingTopic?: string;
+                participants?: string[];
+                urgency?: "low" | "medium" | "high";
+            };
+        };
+        analysis?: {
+            confidence?: number;
+            hasSchedulingIntent?: boolean;
+            schedulingDetails?: {
+                proposedTimes?: string[];
+                meetingTopic?: string;
+                participants?: string[];
+                urgency?: "low" | "medium" | "high";
+                parsedDates?: {
+                    confidence?: number;
+                    original?: string;
+                    parsed?: Date;
+                }[];
+                meetingType?: "one-on-one" | "team-meeting" | "interview" | "casual" | "formal";
+                estimatedDuration?: number;
+                actionItems?: string[];
+                responseRequired?: boolean;
+                calendarAvailability?: {
+                    hasConflicts?: boolean;
+                    suggestedAlternatives?: {
+                        start?: string;
+                        end?: string;
+                        duration?: number;
+                        confidence?: number;
+                    }[];
+                };
+            };
+            suggestedActions?: {
+                type?: "create_event" | "check_availability" | "suggest_times" | "draft_response";
+                description?: string;
+                data?: any;
+                priority?: "low" | "medium" | "high";
+            }[];
+        };
+    }[];
+}>;
+export type EmailBatchProcessingResult = z.infer<typeof EmailBatchProcessingResultSchema>;
+export declare const EnhancedParsedQuerySchema: z.ZodObject<{
+    entities: z.ZodObject<{
+        dateTime: z.ZodOptional<z.ZodString>;
+        duration: z.ZodOptional<z.ZodNumber>;
+        title: z.ZodOptional<z.ZodString>;
+        attendees: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+        location: z.ZodOptional<z.ZodString>;
+        description: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        description?: string;
+        dateTime?: string;
+        attendees?: string[];
+        location?: string;
+        duration?: number;
+        title?: string;
+    }, {
+        description?: string;
+        dateTime?: string;
+        attendees?: string[];
+        location?: string;
+        duration?: number;
+        title?: string;
+    }>;
+    confidence: z.ZodNumber;
+} & {
+    intent: z.ZodEnum<["schedule", "query", "update", "cancel", "availability", "email_query", "email_search", "email_schedule_analysis", "email_batch_process"]>;
+    schedulingContext: z.ZodOptional<z.ZodObject<{
+        emailId: z.ZodOptional<z.ZodString>;
+        batchSize: z.ZodOptional<z.ZodNumber>;
+        analysisDepth: z.ZodOptional<z.ZodEnum<["basic", "enhanced", "comprehensive"]>>;
+    }, "strip", z.ZodTypeAny, {
+        emailId?: string;
+        batchSize?: number;
+        analysisDepth?: "basic" | "enhanced" | "comprehensive";
+    }, {
+        emailId?: string;
+        batchSize?: number;
+        analysisDepth?: "basic" | "enhanced" | "comprehensive";
+    }>>;
+}, "strip", z.ZodTypeAny, {
+    confidence?: number;
+    intent?: "schedule" | "query" | "update" | "cancel" | "availability" | "email_query" | "email_search" | "email_schedule_analysis" | "email_batch_process";
+    entities?: {
+        description?: string;
+        dateTime?: string;
+        attendees?: string[];
+        location?: string;
+        duration?: number;
+        title?: string;
+    };
+    schedulingContext?: {
+        emailId?: string;
+        batchSize?: number;
+        analysisDepth?: "basic" | "enhanced" | "comprehensive";
+    };
+}, {
+    confidence?: number;
+    intent?: "schedule" | "query" | "update" | "cancel" | "availability" | "email_query" | "email_search" | "email_schedule_analysis" | "email_batch_process";
+    entities?: {
+        description?: string;
+        dateTime?: string;
+        attendees?: string[];
+        location?: string;
+        duration?: number;
+        title?: string;
+    };
+    schedulingContext?: {
+        emailId?: string;
+        batchSize?: number;
+        analysisDepth?: "basic" | "enhanced" | "comprehensive";
+    };
+}>;
+export type EnhancedParsedQuery = z.infer<typeof EnhancedParsedQuerySchema>;

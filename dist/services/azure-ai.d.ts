@@ -19,6 +19,22 @@ export declare class AzureAIService {
     }): Promise<AvailableSlot[]>;
     private generateDaySlots;
     private scoreSlots;
+    analyzeEmailForScheduling(emailText: string): Promise<{
+        hasSchedulingIntent: boolean;
+        confidence: number;
+        details?: {
+            proposedTimes?: string[];
+            meetingTopic?: string;
+            participants?: string[];
+            urgency?: 'low' | 'medium' | 'high';
+            meetingType?: 'one-on-one' | 'team-meeting' | 'interview' | 'casual' | 'formal';
+            estimatedDuration?: number;
+            actionItems?: string[];
+            responseRequired?: boolean;
+            confidence?: number;
+        };
+    }>;
+    private fallbackEmailAnalysis;
     generateEventSuggestions(query: string, context?: {
         recentEvents?: string[];
         userPreferences?: Record<string, unknown>;

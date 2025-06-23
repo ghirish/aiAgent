@@ -36,11 +36,13 @@ export const CalendarEventSchema = z.object({
   summary: z.string(),
   description: z.string().optional(),
   start: z.object({
-    dateTime: z.string(),
+    dateTime: z.string().optional(),
+    date: z.string().optional(),
     timeZone: z.string().optional(),
   }),
   end: z.object({
-    dateTime: z.string(),
+    dateTime: z.string().optional(),
+    date: z.string().optional(),
     timeZone: z.string().optional(),
   }),
   attendees: z.array(z.object({
@@ -113,7 +115,7 @@ export type AvailableSlot = z.infer<typeof AvailableSlotSchema>;
 
 // Natural Language Processing Types
 export const ParsedQuerySchema = z.object({
-  intent: z.enum(['schedule', 'query', 'update', 'cancel', 'availability']),
+  intent: z.enum(['schedule', 'query', 'update', 'cancel', 'availability', 'email_query', 'email_search']),
   entities: z.object({
     dateTime: z.string().optional(),
     duration: z.number().optional(),
@@ -169,4 +171,59 @@ export interface LogContext {
   [key: string]: unknown;
 }
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error'; 
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+
+// Gmail Types
+export const GmailMessageSchema = z.object({
+  id: z.string(),
+  threadId: z.string(),
+  labelIds: z.array(z.string()).optional(),
+  snippet: z.string(),
+  payload: z.object({
+    partId: z.string().optional(),
+    mimeType: z.string(),
+    filename: z.string().optional(),
+    headers: z.array(z.object({
+      name: z.string(),
+      value: z.string(),
+    })),
+    body: z.object({
+      attachmentId: z.string().optional(),
+      size: z.number().optional(),
+      data: z.string().optional(),
+    }).optional(),
+    parts: z.array(z.any()).optional(),
+  }),
+  sizeEstimate: z.number().optional(),
+  historyId: z.string().optional(),
+  internalDate: z.string().optional(),
+});
+
+export type GmailMessage = z.infer<typeof GmailMessageSchema>;
+
+export const EmailSummarySchema = z.object({
+  id: z.string(),
+  subject: z.string(),
+  from: z.string(),
+  to: z.array(z.string()),
+  date: z.string(),
+  snippet: z.string(),
+  body: z.string().optional(),
+  isUnread: z.boolean(),
+  hasSchedulingIntent: z.boolean().optional(),
+  schedulingDetails: z.object({
+    proposedTimes: z.array(z.string()).optional(),
+    meetingTopic: z.string().optional(),
+    participants: z.array(z.string()).optional(),
+    urgency: z.enum(['low', 'medium', 'high']).optional(),
+  }).optional(),
+});
+
+export type EmailSummary = z.infer<typeof EmailSummarySchema>;
+
+export class GmailError extends CalendarCopilotError {
+  constructor(message: string, details?: unknown) {
+    super(message, 'GMAIL_ERROR', 503, details);
+    this.name = 'GmailError';
+  }
+} 

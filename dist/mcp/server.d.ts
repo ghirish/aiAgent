@@ -5,7 +5,7 @@ export declare class CalendarCopilotServer {
     private config;
     private logger;
     private calendarService;
-    private aiService;
+    private gmailService;
     constructor(config: Config, logger: Logger);
     private setupHandlers;
     private getAvailableTools;
@@ -17,9 +17,9 @@ export declare class CalendarCopilotServer {
     private handleUpdateEvent;
     private handleCancelEvent;
     private handleGetCalendarSummary;
-    private handleParseNaturalQuery;
-    setAccessToken(accessToken: string, refreshToken?: string): void;
-    getAuthUrl(): string;
-    exchangeCodeForTokens(code: string): Promise<void>;
+    private handleGetRecentEmails;
+    private handleSearchEmails;
+    private handleGetUnreadEmails;
+    private loadOAuthTokens;
     start(): Promise<void>;
 }

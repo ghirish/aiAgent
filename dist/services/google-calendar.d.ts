@@ -4,7 +4,12 @@ export declare class GoogleCalendarService {
     private oauth2Client;
     private calendar;
     private logger;
+    private serviceAccountAuth;
     constructor(clientId: string, clientSecret: string, redirectUri: string, logger: Logger);
+    private initializeServiceAccount;
+    private loadExistingTokens;
+    hasServiceAccount(): boolean;
+    private getAuthClient;
     getAuthUrl(): string;
     exchangeCodeForTokens(code: string): Promise<void>;
     setAccessToken(accessToken: string, refreshToken?: string): void;

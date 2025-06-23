@@ -39,14 +39,14 @@ export class AzureAIService {
   /**
    * Parse natural language query for calendar intent and entities
    */
-  async parseCalendarQuery(query: string): Promise<ParsedQuery> {
+  async parseCalendarQuery(query: string, conversationContext?: any): Promise<ParsedQuery> {
     try {
       this.logger.debug('Parsing calendar query', { query });
 
       const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
       const currentDateTime = new Date().toISOString();
       
-      const systemPrompt = `You are a calendar assistant that extracts intent and entities from natural language queries about calendar events.
+      let systemPrompt = `You are a calendar assistant that extracts intent and entities from natural language queries about calendar events.
 
 CURRENT DATE CONTEXT: Today is ${currentDate} (${currentDateTime})
 
@@ -56,6 +56,8 @@ AVAILABLE INTENTS:
 - update: User wants to modify an existing event
 - cancel: User wants to delete/cancel an event
 - availability: User wants to check free/busy time
+- email_query: User wants to see/search emails
+- email_search: User wants to search for specific emails
 
 Extract the following information and respond ONLY with valid JSON:
 {
@@ -75,7 +77,24 @@ Examples:
 - "Schedule a meeting with john@example.com tomorrow at 2pm for 1 hour" 
 - "What meetings do I have next week?"
 - "Cancel my 3pm meeting today"
-- "Am I free on Friday afternoon?"`;
+- "Am I free on Friday afternoon?"
+- "Show me my recent emails" → intent: "email_query"
+- "Get my unread emails" → intent: "email_query"
+- "Search for emails about meetings" → intent: "email_search"
+- "Find emails from john@example.com" → intent: "email_search"`;
+
+      // Add conversation context if available
+      if (conversationContext) {
+        systemPrompt += `
+
+CONVERSATION CONTEXT:
+- Original query: "${conversationContext.originalQuery}"
+- Previous intent: ${conversationContext.intent}
+- Previously extracted entities: ${JSON.stringify(conversationContext.entities)}
+- Missing information: ${conversationContext.missingInfo?.join(', ') || 'none'}
+
+The user is providing additional information to complete their original request. Merge the new information with the existing context.`;
+      }
 
       const response = await this.openai.getChatCompletions(
         this.deploymentName,
@@ -133,7 +152,13 @@ Examples:
     const lowerQuery = query.toLowerCase();
     
     let intent: ParsedQuery['intent'] = 'query';
-    if (lowerQuery.includes('schedule') || lowerQuery.includes('book') || lowerQuery.includes('create')) {
+    if (lowerQuery.includes('email') || lowerQuery.includes('inbox') || lowerQuery.includes('unread') || lowerQuery.includes('message')) {
+      if (lowerQuery.includes('search') || lowerQuery.includes('find') || lowerQuery.includes('from') || lowerQuery.includes('about')) {
+        intent = 'email_search';
+      } else {
+        intent = 'email_query';
+      }
+    } else if (lowerQuery.includes('schedule') || lowerQuery.includes('book') || lowerQuery.includes('create')) {
       intent = 'schedule';
     } else if (lowerQuery.includes('cancel') || lowerQuery.includes('delete')) {
       intent = 'cancel';

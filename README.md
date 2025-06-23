@@ -198,4 +198,35 @@ src/
 
 ## 📄 License
 
-MIT License - see LICENSE file for details 
+MIT License - see LICENSE file for details ## 🎨 Modern React Frontend
+
+The Calendar Copilot now features a beautiful, modern React frontend built with shadcn/ui components and Tailwind CSS.
+
+### ✨ Key Features:
+- **Modern Design**: Clean, professional interface with gradient backgrounds
+- **Responsive Layout**: Works perfectly on desktop, tablet, and mobile
+- **Real-time Feedback**: Instant success/error states with visual indicators
+- **Request History**: Track your last 10 calendar interactions
+- **Type Badges**: Visual indicators for different operation types (Schedule, Update, Cancel, Query, Availability)
+- **Example Queries**: Quick-start buttons for common requests
+- **Conflict Detection UI**: Clear conflict messages with alternative suggestions
+
+### 🚀 Quick Start:
+```bash
+# Start the API server
+cd calendar-api && node index.js &
+
+# Start the React frontend
+cd calendar-copilot-frontend && npm start
+```
+
+### 📱 Interface Overview:
+1. **Header**: Calendar Copilot branding with AI indicators
+2. **Query Interface**: Natural language input with example buttons
+3. **Response Display**: Real-time responses with success/error states
+4. **Request History**: Recent interactions with type badges and timestamps
+5. **Calendar Data**: Raw calendar data display for debugging
+
+The frontend connects to the calendar API at `http://localhost:3000` and provides the same powerful functionality as the HTML interface, but with a much more polished and professional appearance.
+
+---

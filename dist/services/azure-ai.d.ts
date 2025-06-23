@@ -5,7 +5,7 @@ export declare class AzureAIService {
     private deploymentName;
     private logger;
     constructor(endpoint: string, apiKey: string, deploymentName: string, apiVersion: string, logger: Logger);
-    parseCalendarQuery(query: string): Promise<ParsedQuery>;
+    parseCalendarQuery(query: string, conversationContext?: any): Promise<ParsedQuery>;
     private fallbackParse;
     private extractDuration;
     private extractEmails;

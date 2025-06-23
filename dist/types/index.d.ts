@@ -119,22 +119,28 @@ export declare const CalendarEventSchema: z.ZodObject<{
     summary: z.ZodString;
     description: z.ZodOptional<z.ZodString>;
     start: z.ZodObject<{
-        dateTime: z.ZodString;
+        dateTime: z.ZodOptional<z.ZodString>;
+        date: z.ZodOptional<z.ZodString>;
         timeZone: z.ZodOptional<z.ZodString>;
     }, "strip", z.ZodTypeAny, {
+        date?: string;
         dateTime?: string;
         timeZone?: string;
     }, {
+        date?: string;
         dateTime?: string;
         timeZone?: string;
     }>;
     end: z.ZodObject<{
-        dateTime: z.ZodString;
+        dateTime: z.ZodOptional<z.ZodString>;
+        date: z.ZodOptional<z.ZodString>;
         timeZone: z.ZodOptional<z.ZodString>;
     }, "strip", z.ZodTypeAny, {
+        date?: string;
         dateTime?: string;
         timeZone?: string;
     }, {
+        date?: string;
         dateTime?: string;
         timeZone?: string;
     }>;
@@ -183,10 +189,12 @@ export declare const CalendarEventSchema: z.ZodObject<{
     summary?: string;
     description?: string;
     start?: {
+        date?: string;
         dateTime?: string;
         timeZone?: string;
     };
     end?: {
+        date?: string;
         dateTime?: string;
         timeZone?: string;
     };
@@ -209,10 +217,12 @@ export declare const CalendarEventSchema: z.ZodObject<{
     summary?: string;
     description?: string;
     start?: {
+        date?: string;
         dateTime?: string;
         timeZone?: string;
     };
     end?: {
+        date?: string;
         dateTime?: string;
         timeZone?: string;
     };
@@ -373,7 +383,7 @@ export declare const AvailableSlotSchema: z.ZodObject<{
 }>;
 export type AvailableSlot = z.infer<typeof AvailableSlotSchema>;
 export declare const ParsedQuerySchema: z.ZodObject<{
-    intent: z.ZodEnum<["schedule", "query", "update", "cancel", "availability"]>;
+    intent: z.ZodEnum<["schedule", "query", "update", "cancel", "availability", "email_query", "email_search"]>;
     entities: z.ZodObject<{
         dateTime: z.ZodOptional<z.ZodString>;
         duration: z.ZodOptional<z.ZodNumber>;
@@ -399,7 +409,7 @@ export declare const ParsedQuerySchema: z.ZodObject<{
     confidence: z.ZodNumber;
 }, "strip", z.ZodTypeAny, {
     confidence?: number;
-    intent?: "schedule" | "query" | "update" | "cancel" | "availability";
+    intent?: "schedule" | "query" | "update" | "cancel" | "availability" | "email_query" | "email_search";
     entities?: {
         description?: string;
         dateTime?: string;
@@ -410,7 +420,7 @@ export declare const ParsedQuerySchema: z.ZodObject<{
     };
 }, {
     confidence?: number;
-    intent?: "schedule" | "query" | "update" | "cancel" | "availability";
+    intent?: "schedule" | "query" | "update" | "cancel" | "availability" | "email_query" | "email_search";
     entities?: {
         description?: string;
         dateTime?: string;
@@ -443,3 +453,179 @@ export interface LogContext {
     [key: string]: unknown;
 }
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+export declare const GmailMessageSchema: z.ZodObject<{
+    id: z.ZodString;
+    threadId: z.ZodString;
+    labelIds: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+    snippet: z.ZodString;
+    payload: z.ZodObject<{
+        partId: z.ZodOptional<z.ZodString>;
+        mimeType: z.ZodString;
+        filename: z.ZodOptional<z.ZodString>;
+        headers: z.ZodArray<z.ZodObject<{
+            name: z.ZodString;
+            value: z.ZodString;
+        }, "strip", z.ZodTypeAny, {
+            value?: string;
+            name?: string;
+        }, {
+            value?: string;
+            name?: string;
+        }>, "many">;
+        body: z.ZodOptional<z.ZodObject<{
+            attachmentId: z.ZodOptional<z.ZodString>;
+            size: z.ZodOptional<z.ZodNumber>;
+            data: z.ZodOptional<z.ZodString>;
+        }, "strip", z.ZodTypeAny, {
+            attachmentId?: string;
+            size?: number;
+            data?: string;
+        }, {
+            attachmentId?: string;
+            size?: number;
+            data?: string;
+        }>>;
+        parts: z.ZodOptional<z.ZodArray<z.ZodAny, "many">>;
+    }, "strip", z.ZodTypeAny, {
+        partId?: string;
+        mimeType?: string;
+        filename?: string;
+        headers?: {
+            value?: string;
+            name?: string;
+        }[];
+        body?: {
+            attachmentId?: string;
+            size?: number;
+            data?: string;
+        };
+        parts?: any[];
+    }, {
+        partId?: string;
+        mimeType?: string;
+        filename?: string;
+        headers?: {
+            value?: string;
+            name?: string;
+        }[];
+        body?: {
+            attachmentId?: string;
+            size?: number;
+            data?: string;
+        };
+        parts?: any[];
+    }>;
+    sizeEstimate: z.ZodOptional<z.ZodNumber>;
+    historyId: z.ZodOptional<z.ZodString>;
+    internalDate: z.ZodOptional<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
+    id?: string;
+    threadId?: string;
+    labelIds?: string[];
+    snippet?: string;
+    payload?: {
+        partId?: string;
+        mimeType?: string;
+        filename?: string;
+        headers?: {
+            value?: string;
+            name?: string;
+        }[];
+        body?: {
+            attachmentId?: string;
+            size?: number;
+            data?: string;
+        };
+        parts?: any[];
+    };
+    sizeEstimate?: number;
+    historyId?: string;
+    internalDate?: string;
+}, {
+    id?: string;
+    threadId?: string;
+    labelIds?: string[];
+    snippet?: string;
+    payload?: {
+        partId?: string;
+        mimeType?: string;
+        filename?: string;
+        headers?: {
+            value?: string;
+            name?: string;
+        }[];
+        body?: {
+            attachmentId?: string;
+            size?: number;
+            data?: string;
+        };
+        parts?: any[];
+    };
+    sizeEstimate?: number;
+    historyId?: string;
+    internalDate?: string;
+}>;
+export type GmailMessage = z.infer<typeof GmailMessageSchema>;
+export declare const EmailSummarySchema: z.ZodObject<{
+    id: z.ZodString;
+    subject: z.ZodString;
+    from: z.ZodString;
+    to: z.ZodArray<z.ZodString, "many">;
+    date: z.ZodString;
+    snippet: z.ZodString;
+    body: z.ZodOptional<z.ZodString>;
+    isUnread: z.ZodBoolean;
+    hasSchedulingIntent: z.ZodOptional<z.ZodBoolean>;
+    schedulingDetails: z.ZodOptional<z.ZodObject<{
+        proposedTimes: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+        meetingTopic: z.ZodOptional<z.ZodString>;
+        participants: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+        urgency: z.ZodOptional<z.ZodEnum<["low", "medium", "high"]>>;
+    }, "strip", z.ZodTypeAny, {
+        proposedTimes?: string[];
+        meetingTopic?: string;
+        participants?: string[];
+        urgency?: "low" | "medium" | "high";
+    }, {
+        proposedTimes?: string[];
+        meetingTopic?: string;
+        participants?: string[];
+        urgency?: "low" | "medium" | "high";
+    }>>;
+}, "strip", z.ZodTypeAny, {
+    date?: string;
+    id?: string;
+    snippet?: string;
+    body?: string;
+    subject?: string;
+    from?: string;
+    to?: string[];
+    isUnread?: boolean;
+    hasSchedulingIntent?: boolean;
+    schedulingDetails?: {
+        proposedTimes?: string[];
+        meetingTopic?: string;
+        participants?: string[];
+        urgency?: "low" | "medium" | "high";
+    };
+}, {
+    date?: string;
+    id?: string;
+    snippet?: string;
+    body?: string;
+    subject?: string;
+    from?: string;
+    to?: string[];
+    isUnread?: boolean;
+    hasSchedulingIntent?: boolean;
+    schedulingDetails?: {
+        proposedTimes?: string[];
+        meetingTopic?: string;
+        participants?: string[];
+        urgency?: "low" | "medium" | "high";
+    };
+}>;
+export type EmailSummary = z.infer<typeof EmailSummarySchema>;
+export declare class GmailError extends CalendarCopilotError {
+    constructor(message: string, details?: unknown);
+}

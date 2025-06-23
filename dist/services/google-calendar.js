@@ -1,30 +1,132 @@
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import { GoogleCalendarError, ValidationError } from '../types/index.js';
+import fs from 'fs';
+import path from 'path';
 export class GoogleCalendarService {
     oauth2Client;
     calendar;
     logger;
+    serviceAccountAuth;
     constructor(clientId, clientSecret, redirectUri, logger) {
         this.logger = logger.child({ component: 'GoogleCalendar' });
         this.oauth2Client = new OAuth2Client(clientId, clientSecret, redirectUri);
+        this.initializeServiceAccount();
         this.calendar = google.calendar({
             version: 'v3',
-            auth: this.oauth2Client
+            auth: this.serviceAccountAuth || this.oauth2Client
         });
-        this.logger.info('Google Calendar service initialized');
+        this.logger.info('Google Calendar service initialized', {
+            hasServiceAccount: !!this.serviceAccountAuth,
+            hasOAuth2: !!this.oauth2Client
+        });
+    }
+    initializeServiceAccount() {
+        try {
+            this.loadExistingTokens();
+            const serviceAccountPath = process.env.GOOGLE_SERVICE_ACCOUNT_PATH;
+            if (serviceAccountPath) {
+                const fullPath = path.resolve(serviceAccountPath);
+                if (fs.existsSync(fullPath)) {
+                    this.logger.info('Service account key file found, initializing service account auth');
+                    this.serviceAccountAuth = new google.auth.GoogleAuth({
+                        keyFile: fullPath,
+                        scopes: [
+                            'https://www.googleapis.com/auth/calendar',
+                            'https://www.googleapis.com/auth/calendar.events',
+                        ],
+                    });
+                    this.logger.info('✅ Service account authentication initialized successfully');
+                    return;
+                }
+                else {
+                    this.logger.warn('Service account key file not found at path:', fullPath);
+                }
+            }
+            const commonPaths = [
+                './google-service-account.json',
+                './credentials/google-service-account.json',
+                './service-account.json'
+            ];
+            for (const commonPath of commonPaths) {
+                const fullPath = path.resolve(commonPath);
+                if (fs.existsSync(fullPath)) {
+                    this.logger.info('Found service account key at:', commonPath);
+                    this.serviceAccountAuth = new google.auth.GoogleAuth({
+                        keyFile: fullPath,
+                        scopes: [
+                            'https://www.googleapis.com/auth/calendar',
+                            'https://www.googleapis.com/auth/calendar.events',
+                        ],
+                    });
+                    this.logger.info('✅ Service account authentication initialized from:', commonPath);
+                    return;
+                }
+            }
+            if (this.oauth2Client.credentials && this.oauth2Client.credentials.access_token) {
+                this.logger.info('✅ OAuth2 tokens loaded successfully');
+                return;
+            }
+            this.logger.warn('No service account key file found and no OAuth2 tokens available.');
+        }
+        catch (error) {
+            this.logger.warn('Failed to initialize authentication:', error);
+        }
+    }
+    loadExistingTokens() {
+        const tokenPaths = [
+            './tokens.json',
+            './token.json',
+            './credentials/tokens.json'
+        ];
+        for (const tokenPath of tokenPaths) {
+            try {
+                const fullPath = path.resolve(tokenPath);
+                if (fs.existsSync(fullPath)) {
+                    const tokens = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+                    if (tokens.expiry_date && tokens.expiry_date > Date.now()) {
+                        this.oauth2Client.setCredentials(tokens);
+                        this.logger.info('✅ Loaded valid OAuth2 tokens from:', tokenPath);
+                        return;
+                    }
+                    else if (tokens.refresh_token) {
+                        this.oauth2Client.setCredentials(tokens);
+                        this.logger.info('✅ Loaded OAuth2 tokens with refresh capability from:', tokenPath);
+                        return;
+                    }
+                    else {
+                        this.logger.warn('OAuth2 tokens expired and no refresh token available in:', tokenPath);
+                    }
+                }
+            }
+            catch (error) {
+                this.logger.debug('Could not load tokens from:', tokenPath, error);
+            }
+        }
+    }
+    hasServiceAccount() {
+        return !!this.serviceAccountAuth;
+    }
+    async getAuthClient() {
+        if (this.serviceAccountAuth) {
+            return await this.serviceAccountAuth.getClient();
+        }
+        return this.oauth2Client;
     }
     getAuthUrl() {
         const scopes = [
             'https://www.googleapis.com/auth/calendar',
             'https://www.googleapis.com/auth/calendar.events',
+            'https://www.googleapis.com/auth/gmail.readonly',
+            'https://www.googleapis.com/auth/gmail.send',
+            'https://www.googleapis.com/auth/gmail.modify',
         ];
         const authUrl = this.oauth2Client.generateAuthUrl({
             access_type: 'offline',
             scope: scopes,
             prompt: 'consent',
         });
-        this.logger.info('Generated OAuth authorization URL');
+        this.logger.info('Generated OAuth authorization URL with Calendar and Gmail scopes');
         return authUrl;
     }
     async exchangeCodeForTokens(code) {
@@ -52,8 +154,11 @@ export class GoogleCalendarService {
                 timeMax,
                 calendarId,
                 maxResults,
+                authType: this.serviceAccountAuth ? 'service-account' : 'oauth2'
             });
-            const response = await this.calendar.events.list({
+            const authClient = await this.getAuthClient();
+            const calendar = google.calendar({ version: 'v3', auth: authClient });
+            const response = await calendar.events.list({
                 calendarId,
                 timeMin,
                 timeMax,
@@ -83,11 +188,14 @@ export class GoogleCalendarService {
                 recurrence: event.recurrence,
                 reminders: event.reminders,
             }));
-            this.logger.info(`Retrieved ${transformedEvents.length} calendar events`);
+            this.logger.info(`✅ Retrieved ${transformedEvents.length} calendar events using ${this.serviceAccountAuth ? 'service account' : 'OAuth2'}`);
             return transformedEvents;
         }
         catch (error) {
             this.logger.logError(error, 'Failed to fetch calendar events');
+            if (error instanceof Error && error.message.includes('No access, refresh token')) {
+                throw new GoogleCalendarError('Google Calendar authentication not configured. Please set up service account authentication or OAuth2 tokens. See README.md for setup instructions.', error);
+            }
             throw new GoogleCalendarError('Failed to fetch calendar events', error);
         }
     }
@@ -95,7 +203,26 @@ export class GoogleCalendarService {
         try {
             this.logger.debug('Creating calendar event', { eventData, calendarId });
             if (!eventData.summary || !eventData.start || !eventData.end) {
-                throw new ValidationError('Missing required event fields: summary, start, end');
+                const missingFields = [];
+                if (!eventData.summary)
+                    missingFields.push('summary');
+                if (!eventData.start)
+                    missingFields.push('start');
+                if (!eventData.end)
+                    missingFields.push('end');
+                this.logger.error('Missing required fields for event creation', {
+                    missingFields,
+                    providedData: eventData
+                });
+                throw new ValidationError(`Missing required event fields: ${missingFields.join(', ')}`);
+            }
+            if (!eventData.start.dateTime && !eventData.start.date) {
+                this.logger.error('Invalid start time - missing dateTime or date', { start: eventData.start });
+                throw new ValidationError('Start time must have either dateTime or date');
+            }
+            if (!eventData.end.dateTime && !eventData.end.date) {
+                this.logger.error('Invalid end time - missing dateTime or date', { end: eventData.end });
+                throw new ValidationError('End time must have either dateTime or date');
             }
             const googleEvent = {
                 summary: eventData.summary,
@@ -108,10 +235,21 @@ export class GoogleCalendarService {
                     useDefault: true,
                 },
             };
+            this.logger.info('Attempting to create Google Calendar event', {
+                googleEvent,
+                calendarId,
+                hasAuth: !!this.oauth2Client.credentials.access_token
+            });
             const response = await this.calendar.events.insert({
                 calendarId,
                 resource: googleEvent,
                 sendNotifications: true,
+            });
+            this.logger.info('Google Calendar API response received', {
+                status: response.status,
+                statusText: response.statusText,
+                eventId: response.data?.id,
+                htmlLink: response.data?.htmlLink
             });
             const createdEvent = response.data;
             const transformedEvent = {
@@ -135,11 +273,20 @@ export class GoogleCalendarService {
                 recurrence: createdEvent.recurrence,
                 reminders: createdEvent.reminders,
             };
-            this.logger.info('Created calendar event', { eventId: createdEvent.id });
+            this.logger.info('✅ SUCCESSFULLY CREATED CALENDAR EVENT', {
+                eventId: createdEvent.id,
+                htmlLink: createdEvent.htmlLink,
+                summary: createdEvent.summary
+            });
             return transformedEvent;
         }
         catch (error) {
-            this.logger.logError(error, 'Failed to create calendar event');
+            this.logger.error('❌ FAILED TO CREATE CALENDAR EVENT', {
+                error: error.message,
+                code: error.code,
+                details: error.details || error.response?.data,
+                stack: error.stack
+            });
             throw new GoogleCalendarError('Failed to create calendar event', error);
         }
     }

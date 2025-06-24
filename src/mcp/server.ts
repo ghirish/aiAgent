@@ -265,6 +265,110 @@ export class CalendarCopilotServer {
               },
               required: ['emails']
             }
+          },
+          {
+            name: 'suggest_meeting_times',
+            description: 'Phase 4: Intelligent meeting time suggestion workflow with calendar cross-reference',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                originalProposals: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Original time proposals from email (e.g., "next Tuesday at 2pm")'
+                },
+                meetingDetails: {
+                  type: 'object',
+                  properties: {
+                    topic: { type: 'string', description: 'Meeting topic/purpose' },
+                    duration: { type: 'number', description: 'Meeting duration in minutes', default: 60 },
+                    participants: {
+                      type: 'array',
+                      items: { type: 'string' },
+                      description: 'Participant emails'
+                    },
+                    urgency: { 
+                      type: 'string', 
+                      enum: ['low', 'medium', 'high'],
+                      description: 'Meeting urgency level'
+                    }
+                  }
+                },
+                preferredTimeRanges: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      start: { type: 'string', description: 'Start time in ISO format' },
+                      end: { type: 'string', description: 'End time in ISO format' }
+                    },
+                    required: ['start', 'end']
+                  },
+                  description: 'Preferred time ranges for alternatives'
+                },
+                excludeWeekends: { type: 'boolean', default: true, description: 'Exclude weekends from suggestions' }
+              },
+              required: ['originalProposals', 'meetingDetails']
+            }
+          },
+          {
+            name: 'draft_scheduling_response',
+            description: 'Phase 5: Generate professional email responses for scheduling requests with calendar integration',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                originalEmail: {
+                  type: 'object',
+                  properties: {
+                    subject: { type: 'string', description: 'Original email subject' },
+                    from: { type: 'string', description: 'Original sender email' },
+                    content: { type: 'string', description: 'Original email content' },
+                    proposedTimes: {
+                      type: 'array',
+                      items: { type: 'string' },
+                      description: 'Times proposed in original email'
+                    }
+                  },
+                  required: ['subject', 'from', 'content']
+                },
+                responseType: {
+                  type: 'string',
+                  enum: ['accept', 'counter-propose', 'decline', 'request-info'],
+                  description: 'Type of response to generate'
+                },
+                selectedTime: {
+                  type: 'string',
+                  description: 'Time slot being accepted (for accept responses)'
+                },
+                counterProposals: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Alternative times to propose (for counter-propose responses)'
+                },
+                reason: {
+                  type: 'string',
+                  description: 'Reason for declining or counter-proposing'
+                },
+                additionalMessage: {
+                  type: 'string',
+                  description: 'Additional message to include in response'
+                },
+                includeCalendarInvite: {
+                  type: 'boolean',
+                  default: true,
+                  description: 'Whether to mention/include calendar invite'
+                },
+                meetingDetails: {
+                  type: 'object',
+                  properties: {
+                    location: { type: 'string', description: 'Meeting location or video link' },
+                    duration: { type: 'number', description: 'Meeting duration in minutes', default: 60 },
+                    agenda: { type: 'string', description: 'Meeting agenda or topics' }
+                  }
+                }
+              },
+              required: ['originalEmail', 'responseType']
+            }
           }
         ]
       };
@@ -340,6 +444,10 @@ export class CalendarCopilotServer {
         return this.handleAnalyzeEmailForScheduling(args);
       case 'process_batch_emails':
         return this.handleProcessBatchEmails(args);
+      case 'suggest_meeting_times':
+        return this.handleSuggestMeetingTimes(args);
+      case 'draft_scheduling_response':
+        return this.handleDraftSchedulingResponse(args);
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
@@ -451,16 +559,21 @@ export class CalendarCopilotServer {
       const availability = [];
       const busyTimes = [];
 
-      for (const calendarId of calendarIds) {
-        const calendarBusy = freeBusyResult.calendars?.[calendarId]?.busy || [];
-        
-        for (const busyPeriod of calendarBusy) {
-          busyTimes.push({
-            calendarId,
-            start: busyPeriod.start,
-            end: busyPeriod.end
-          });
+      // Handle potential undefined calendars response
+      if (freeBusyResult && freeBusyResult.calendars) {
+        for (const calendarId of calendarIds) {
+          const calendarBusy = freeBusyResult.calendars[calendarId]?.busy || [];
+          
+          for (const busyPeriod of calendarBusy) {
+            busyTimes.push({
+              calendarId,
+              start: busyPeriod.start,
+              end: busyPeriod.end
+            });
+          }
         }
+      } else {
+        this.logger.warn('FreeBusy API response missing calendars data', { freeBusyResult });
       }
 
       // Calculate free time slots (simplified - between busy periods)
@@ -573,8 +686,14 @@ export class CalendarCopilotServer {
       // Create event using GoogleCalendarService
       const eventData = {
         summary,
-        startTime,
-        endTime,
+        start: {
+          dateTime: startTime,
+          timeZone: 'America/Los_Angeles'
+        },
+        end: {
+          dateTime: endTime,
+          timeZone: 'America/Los_Angeles'
+        },
         description,
         location,
         attendees: attendees?.map(email => ({ 
@@ -582,7 +701,15 @@ export class CalendarCopilotServer {
         }))
       };
 
-      const createdEvent = await this.googleCalendarService?.createEvent(eventData, calendarId);
+      if (!this.googleCalendarService) {
+        throw new Error('Google Calendar service not initialized');
+      }
+
+      const createdEvent = await this.googleCalendarService.createEvent(eventData, calendarId);
+
+      if (!createdEvent) {
+        throw new Error('Event creation returned no result');
+      }
 
       // Return clean, structured response
       return {
@@ -1173,6 +1300,235 @@ export class CalendarCopilotServer {
         highPriorityActions: 0,
         results: []
       };
+    }
+  }
+
+  private async handleSuggestMeetingTimes(args: unknown): Promise<unknown> {
+    const { originalProposals, meetingDetails, preferredTimeRanges, excludeWeekends } = args as {
+      originalProposals: string[];
+      meetingDetails: {
+        topic?: string;
+        duration?: number;
+        participants?: string[];
+        urgency?: 'low' | 'medium' | 'high';
+      };
+      preferredTimeRanges?: Array<{ start: string; end: string }>;
+      excludeWeekends?: boolean;
+    };
+
+    try {
+      this.logger.info('Running suggest meeting times workflow', { 
+        proposalCount: originalProposals.length,
+        topic: meetingDetails.topic 
+      });
+
+      if (!this.emailSchedulerService) {
+        throw new Error('EmailScheduler service not initialized');
+      }
+
+      // Use EmailSchedulerService suggest meeting times workflow
+      const result = await this.emailSchedulerService.suggestMeetingTimes({
+        originalProposals,
+        meetingDetails,
+        preferredTimeRanges,
+        excludeWeekends
+      });
+
+      return {
+        success: result.success,
+        originalProposalsAnalysis: result.originalProposalsAnalysis.map(proposal => ({
+          proposal: proposal.proposal,
+          parsed: proposal.parsed?.toISOString(),
+          isAvailable: proposal.isAvailable,
+          conflicts: proposal.conflicts
+        })),
+        recommendedTimes: result.recommendedTimes,
+        alternativeSuggestions: result.alternativeSuggestions,
+        summary: result.summary,
+        metadata: {
+          totalProposals: originalProposals.length,
+          availableProposals: result.originalProposalsAnalysis.filter(p => p.isAvailable).length,
+          recommendationsCount: result.recommendedTimes.length,
+          alternativesCount: result.alternativeSuggestions.length
+        }
+      };
+
+    } catch (error) {
+      this.logger.error('Failed to suggest meeting times', { 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+      
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Meeting time suggestion failed',
+        originalProposalsAnalysis: [],
+        recommendedTimes: [],
+        alternativeSuggestions: [],
+        summary: 'Unable to process meeting time suggestions due to an error'
+      };
+    }
+  }
+
+  /**
+   * Phase 5: Handle drafting scheduling response emails
+   */
+  private async handleDraftSchedulingResponse(args: unknown): Promise<unknown> {
+    const { 
+      originalEmail, 
+      responseType, 
+      selectedTime, 
+      counterProposals, 
+      reason, 
+      additionalMessage, 
+      includeCalendarInvite = true, 
+      meetingDetails 
+    } = args as {
+      originalEmail: {
+        subject: string;
+        from: string;
+        content: string;
+        proposedTimes?: string[];
+      };
+      responseType: 'accept' | 'counter-propose' | 'decline' | 'request-info';
+      selectedTime?: string;
+      counterProposals?: string[];
+      reason?: string;
+      additionalMessage?: string;
+      includeCalendarInvite?: boolean;
+      meetingDetails?: {
+        location?: string;
+        duration?: number;
+        agenda?: string;
+      };
+    };
+
+    try {
+      this.logger.info('Drafting scheduling response', { 
+        responseType, 
+        originalSubject: originalEmail.subject,
+        from: originalEmail.from 
+      });
+
+      if (!this.azureAIService) {
+        throw new Error('Azure AI service not initialized');
+      }
+
+      // Use Azure AI to generate professional email response
+      const responseData = await this.azureAIService.generateSchedulingResponse({
+        originalEmail,
+        responseType,
+        selectedTime,
+        counterProposals,
+        reason,
+        additionalMessage,
+        includeCalendarInvite,
+        meetingDetails
+      });
+
+      // Generate calendar invite if requested and accepting
+      let calendarInvite = null;
+      if (includeCalendarInvite && responseType === 'accept' && selectedTime && this.googleCalendarService) {
+        try {
+          calendarInvite = await this.generateCalendarInvite(originalEmail, selectedTime, meetingDetails);
+        } catch (calendarError) {
+          this.logger.warn('Failed to generate calendar invite', { error: calendarError });
+        }
+      }
+
+      return {
+        success: true,
+        responseType,
+        emailResponse: {
+          subject: responseData.subject,
+          body: responseData.body,
+          tone: responseData.tone,
+          urgency: responseData.urgency
+        },
+        calendarInvite,
+        metadata: {
+          originalSubject: originalEmail.subject,
+          originalFrom: originalEmail.from,
+          responseGenerated: new Date().toISOString(),
+          hasCalendarInvite: !!calendarInvite
+        },
+        suggestedActions: [
+          responseType === 'accept' ? 'Review and send acceptance email' : 
+          responseType === 'decline' ? 'Review and send decline email' :
+          responseType === 'counter-propose' ? 'Review counter-proposal and send' :
+          'Review information request and send',
+          ...(calendarInvite ? ['Send calendar invite'] : []),
+          'Mark original email as processed'
+        ]
+      };
+
+    } catch (error) {
+      this.logger.error('Failed to draft scheduling response', { 
+        responseType,
+        error: error instanceof Error ? error.message : String(error) 
+      });
+      
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Response generation failed',
+        responseType,
+        emailResponse: null,
+        calendarInvite: null
+      };
+    }
+  }
+
+  /**
+   * Generate calendar invite for accepted meetings
+   */
+  private async generateCalendarInvite(
+    originalEmail: { subject: string; from: string; content: string },
+    selectedTime: string,
+    meetingDetails?: { location?: string; duration?: number; agenda?: string }
+  ): Promise<any> {
+    if (!this.googleCalendarService) {
+      throw new Error('Google Calendar service not available');
+    }
+
+    // Parse the selected time (you might want to enhance this parsing)
+    const eventStart = new Date(selectedTime);
+    const eventEnd = new Date(eventStart.getTime() + (meetingDetails?.duration || 60) * 60000);
+
+    const calendarEvent = {
+      summary: originalEmail.subject.replace(/^(re:|fwd?:)\s*/i, '').trim(),
+      description: `Meeting scheduled via Calendar Copilot\n\n${meetingDetails?.agenda || ''}`,
+      start: {
+        dateTime: eventStart.toISOString(),
+        timeZone: 'America/Los_Angeles' // You might want to make this configurable
+      },
+      end: {
+        dateTime: eventEnd.toISOString(),
+        timeZone: 'America/Los_Angeles'
+      },
+      attendees: [
+        { email: originalEmail.from }
+      ],
+      location: meetingDetails?.location || '',
+      reminders: {
+        useDefault: true
+      }
+    };
+
+    try {
+      // Create the calendar event
+      const createdEvent = await this.googleCalendarService.createEvent(calendarEvent);
+      
+      return {
+        eventId: createdEvent.id,
+        summary: createdEvent.summary,
+        start: createdEvent.start,
+        end: createdEvent.end,
+        location: createdEvent.location,
+        attendees: createdEvent.attendees,
+        calendarLink: `https://calendar.google.com/calendar/event?eid=${createdEvent.id}`
+      };
+    } catch (error) {
+      this.logger.error('Failed to create calendar event', { error });
+      throw error;
     }
   }
 

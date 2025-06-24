@@ -388,6 +388,8 @@ export declare const ParsedQuerySchema: z.ZodObject<{
         dateTime: z.ZodOptional<z.ZodString>;
         duration: z.ZodOptional<z.ZodNumber>;
         title: z.ZodOptional<z.ZodString>;
+        currentTitle: z.ZodOptional<z.ZodString>;
+        newTitle: z.ZodOptional<z.ZodString>;
         attendees: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         location: z.ZodOptional<z.ZodString>;
         description: z.ZodOptional<z.ZodString>;
@@ -398,6 +400,8 @@ export declare const ParsedQuerySchema: z.ZodObject<{
         location?: string;
         duration?: number;
         title?: string;
+        currentTitle?: string;
+        newTitle?: string;
     }, {
         description?: string;
         dateTime?: string;
@@ -405,6 +409,8 @@ export declare const ParsedQuerySchema: z.ZodObject<{
         location?: string;
         duration?: number;
         title?: string;
+        currentTitle?: string;
+        newTitle?: string;
     }>;
     confidence: z.ZodNumber;
 }, "strip", z.ZodTypeAny, {
@@ -417,6 +423,8 @@ export declare const ParsedQuerySchema: z.ZodObject<{
         location?: string;
         duration?: number;
         title?: string;
+        currentTitle?: string;
+        newTitle?: string;
     };
 }, {
     confidence?: number;
@@ -428,6 +436,8 @@ export declare const ParsedQuerySchema: z.ZodObject<{
         location?: string;
         duration?: number;
         title?: string;
+        currentTitle?: string;
+        newTitle?: string;
     };
 }>;
 export type ParsedQuery = z.infer<typeof ParsedQuerySchema>;
@@ -1427,6 +1437,8 @@ export declare const EnhancedParsedQuerySchema: z.ZodObject<{
         dateTime: z.ZodOptional<z.ZodString>;
         duration: z.ZodOptional<z.ZodNumber>;
         title: z.ZodOptional<z.ZodString>;
+        currentTitle: z.ZodOptional<z.ZodString>;
+        newTitle: z.ZodOptional<z.ZodString>;
         attendees: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         location: z.ZodOptional<z.ZodString>;
         description: z.ZodOptional<z.ZodString>;
@@ -1437,6 +1449,8 @@ export declare const EnhancedParsedQuerySchema: z.ZodObject<{
         location?: string;
         duration?: number;
         title?: string;
+        currentTitle?: string;
+        newTitle?: string;
     }, {
         description?: string;
         dateTime?: string;
@@ -1444,6 +1458,8 @@ export declare const EnhancedParsedQuerySchema: z.ZodObject<{
         location?: string;
         duration?: number;
         title?: string;
+        currentTitle?: string;
+        newTitle?: string;
     }>;
     confidence: z.ZodNumber;
 } & {
@@ -1471,6 +1487,8 @@ export declare const EnhancedParsedQuerySchema: z.ZodObject<{
         location?: string;
         duration?: number;
         title?: string;
+        currentTitle?: string;
+        newTitle?: string;
     };
     schedulingContext?: {
         emailId?: string;
@@ -1487,6 +1505,8 @@ export declare const EnhancedParsedQuerySchema: z.ZodObject<{
         location?: string;
         duration?: number;
         title?: string;
+        currentTitle?: string;
+        newTitle?: string;
     };
     schedulingContext?: {
         emailId?: string;

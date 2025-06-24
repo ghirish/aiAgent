@@ -29,6 +29,9 @@ export declare class CalendarCopilotServer {
     private handleGetSchedulingEmails;
     private handleAnalyzeEmailForScheduling;
     private handleProcessBatchEmails;
+    private handleSuggestMeetingTimes;
+    private handleDraftSchedulingResponse;
+    private generateCalendarInvite;
     private loadOAuthTokens;
     start(): Promise<void>;
     initialize(config: {

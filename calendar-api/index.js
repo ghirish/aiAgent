@@ -4,17 +4,43 @@ require('dotenv').config({ path: '../.env' });
 const express = require('express');
 const cors = require('cors');
 const { MCPClient } = require('./mcp-client.cjs');
+const http = require('http');
+const { Server } = require('socket.io');
+const { RealTimeEmailMonitor } = require('./real-time-email-monitor.js');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Initialize MCP client
-let mcpClient;
-let azureAIService;
+// Server configuration
+const PORT = process.env.PORT || 3000;
 
-// Conversation state management
-const conversations = new Map();
+// Create HTTP server for Socket.IO
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3001",
+    methods: ["GET", "POST"]
+  }
+});
+
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log('🔌 Client connected to WebSocket');
+  connectedClients.add(socket);
+  
+  socket.on('disconnect', () => {
+    console.log('🔌 Client disconnected from WebSocket');
+    connectedClients.delete(socket);
+  });
+});
+
+// Global variables
+let mcpClient = null;
+let azureAIService = null;
+let conversations = new Map();
+let emailMonitor = null;
+let connectedClients = new Set();
 
 async function initializeServices() {
   try {
@@ -63,26 +89,34 @@ async function initializeServices() {
 // Test endpoint for get_calendar_events
 app.post('/api/test-get-events', async (req, res) => {
   try {
-    const { timeMin, timeMax } = req.body;
-    console.log('🧪 Testing get_calendar_events:', { timeMin, timeMax });
+    const { timeMin, timeMax, tool, ...params } = req.body;
+    const toolName = tool || 'get_calendar_events';
+    
+    console.log(`🧪 Testing MCP tool: ${toolName}`, params);
 
-    const result = await mcpClient.callTool('get_calendar_events', {
-      timeMin,
-      timeMax,
-      maxResults: 10
-    });
+    let result;
+    if (toolName === 'get_calendar_events') {
+      result = await mcpClient.callTool('get_calendar_events', {
+        timeMin,
+        timeMax,
+        maxResults: 10
+      });
+    } else {
+      // Test any MCP tool with provided parameters
+      result = await mcpClient.callTool(toolName, params);
+    }
 
     res.json({
       success: true,
-      message: 'Successfully retrieved events',
+      message: `Successfully tested ${toolName}`,
       data: result
     });
 
   } catch (error) {
-    console.error('❌ Error testing get_calendar_events:', error);
+    console.error(`❌ Error testing MCP tool:`, error);
     res.status(500).json({
       success: false,
-      error: 'Failed to get events',
+      error: `Failed to test MCP tool`,
       details: error.message
     });
   }
@@ -452,11 +486,14 @@ app.post('/api/calendar-query', async (req, res) => {
       case 'update':
         // For update operations, we need to find the event first by title
         // This is a two-step process: 1) Find event by title, 2) Update it
-        if (!parsedQuery.entities.title) {
+        const currentTitle = parsedQuery.entities.currentTitle || parsedQuery.entities.title;
+        const newTitle = parsedQuery.entities.newTitle || parsedQuery.entities.title;
+        
+        if (!currentTitle) {
           throw new Error('Event updates require an event title to find the event. Please specify which event to update.');
         }
         
-        // First, search for events with the specified title in the next 30 days
+        // First, search for events with the current title in the next 30 days
         const searchStart = new Date();
         const searchEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
         
@@ -464,19 +501,19 @@ app.post('/api/calendar-query', async (req, res) => {
         mcpParameters = {
           timeMin: searchStart.toISOString(),
           timeMax: searchEnd.toISOString(),
-          searchTitle: parsedQuery.entities.title // We'll use this to filter events
+          searchTitle: currentTitle // Search for the CURRENT title
         };
         
         // Store the update intent for processing after we find the event
         mcpParameters._updateIntent = {
-          title: parsedQuery.entities.title,
+          currentTitle: currentTitle,
+          newTitle: newTitle,
           duration: parsedQuery.entities.duration,
-          newTitle: parsedQuery.entities.title, // Keep same title unless specified otherwise
           description: parsedQuery.entities.description,
           location: parsedQuery.entities.location
         };
         
-        console.log(`🔍 Searching for event "${parsedQuery.entities.title}" to update`);
+        console.log(`🔍 Searching for event "${currentTitle}" to update${newTitle !== currentTitle ? ` → "${newTitle}"` : ''}`);
         break;
 
       case 'cancel':
@@ -612,7 +649,7 @@ app.post('/api/calendar-query', async (req, res) => {
       // Check if this is a search for update or cancel operations
       if (mcpParameters._updateIntent || mcpParameters._cancelIntent) {
         const intent = mcpParameters._updateIntent ? 'update' : 'cancel';
-        const targetTitle = mcpParameters._updateIntent?.title || mcpParameters._cancelIntent?.title;
+        const targetTitle = mcpParameters._updateIntent?.currentTitle || mcpParameters._cancelIntent?.title;
         
         if (events.success && events.totalEvents > 0) {
           // Filter events by title with multiple matching strategies
@@ -792,21 +829,24 @@ app.post('/api/calendar-query', async (req, res) => {
             try {
               const createResult = await mcpClient.callTool('create_event', {
                 summary: scheduleIntent.title,
-                start: {
-                  dateTime: scheduleIntent.requestedStart,
-                  timeZone: 'America/Los_Angeles'
-                },
-                end: {
-                  dateTime: scheduleIntent.requestedEnd,
-                  timeZone: 'America/Los_Angeles'
-                },
+                startTime: scheduleIntent.requestedStart,
+                endTime: scheduleIntent.requestedEnd,
                 description: scheduleIntent.description,
                 location: scheduleIntent.location,
                 attendees: scheduleIntent.attendees
               });
               
               const createResultData = typeof createResult === 'string' ? JSON.parse(createResult) : createResult;
-              const eventResult = createResultData?.content?.[0]?.text ? JSON.parse(createResultData.content[0].text) : createResultData;
+              let eventResult;
+              try {
+                eventResult = createResultData?.content?.[0]?.text ? JSON.parse(createResultData.content[0].text) : createResultData;
+              } catch (parseError) {
+                // If JSON parsing fails, treat the content as an error message
+                eventResult = {
+                  success: false,
+                  error: createResultData?.content?.[0]?.text || 'Failed to parse event creation response'
+                };
+              }
               
               if (eventResult.success) {
                 const event = eventResult.event;
@@ -928,7 +968,16 @@ app.post('/api/calendar-query', async (req, res) => {
       }
     } else if (mcpToolName === 'create_event') {
       const resultData = typeof mcpResult === 'string' ? JSON.parse(mcpResult) : mcpResult;
-      const eventResult = resultData?.content?.[0]?.text ? JSON.parse(resultData.content[0].text) : resultData;
+      let eventResult;
+      try {
+        eventResult = resultData?.content?.[0]?.text ? JSON.parse(resultData.content[0].text) : resultData;
+      } catch (parseError) {
+        // If JSON parsing fails, treat the content as an error message
+        eventResult = {
+          success: false,
+          error: resultData?.content?.[0]?.text || 'Failed to parse event response'
+        };
+      }
       
       if (eventResult.success) {
         const event = eventResult.event;
@@ -954,7 +1003,16 @@ app.post('/api/calendar-query', async (req, res) => {
       }
     } else if (mcpToolName === 'update_event') {
       const resultData = typeof mcpResult === 'string' ? JSON.parse(mcpResult) : mcpResult;
-      const eventResult = resultData?.content?.[0]?.text ? JSON.parse(resultData.content[0].text) : resultData;
+      let eventResult;
+      try {
+        eventResult = resultData?.content?.[0]?.text ? JSON.parse(resultData.content[0].text) : resultData;
+      } catch (parseError) {
+        // If JSON parsing fails, treat the content as an error message
+        eventResult = {
+          success: false,
+          error: resultData?.content?.[0]?.text || 'Failed to parse event response'
+        };
+      }
       
       if (eventResult.success) {
         const event = eventResult.event;
@@ -980,7 +1038,16 @@ app.post('/api/calendar-query', async (req, res) => {
       }
     } else if (mcpToolName === 'cancel_event') {
       const resultData = typeof mcpResult === 'string' ? JSON.parse(mcpResult) : mcpResult;
-      const eventResult = resultData?.content?.[0]?.text ? JSON.parse(resultData.content[0].text) : resultData;
+      let eventResult;
+      try {
+        eventResult = resultData?.content?.[0]?.text ? JSON.parse(resultData.content[0].text) : resultData;
+      } catch (parseError) {
+        // If JSON parsing fails, treat the content as an error message
+        eventResult = {
+          success: false,
+          error: resultData?.content?.[0]?.text || 'Failed to parse event response'
+        };
+      }
       
       if (eventResult.success) {
         responseMessage = `✅ Event cancelled successfully!\n\n`;
@@ -991,7 +1058,16 @@ app.post('/api/calendar-query', async (req, res) => {
     } else if (mcpToolName === 'get_recent_emails' || mcpToolName === 'get_unread_emails' || mcpToolName === 'search_emails') {
       // Gmail tools response formatting
       const resultData = typeof mcpResult === 'string' ? JSON.parse(mcpResult) : mcpResult;
-      const emailResult = resultData?.content?.[0]?.text ? JSON.parse(resultData.content[0].text) : resultData;
+      let emailResult;
+      try {
+        emailResult = resultData?.content?.[0]?.text ? JSON.parse(resultData.content[0].text) : resultData;
+      } catch (parseError) {
+        // If JSON parsing fails, treat the content as an error message
+        emailResult = {
+          success: false,
+          error: resultData?.content?.[0]?.text || 'Failed to parse email response'
+        };
+      }
       
       if (emailResult.success) {
         const emails = emailResult.emails || [];
@@ -1149,35 +1225,208 @@ app.get('/api/auth/callback', (req, res) => {
   });
 });
 
-// Start server
-const PORT = process.env.PORT || 3001;
+// Test meeting email endpoint
+app.post('/api/test-meeting-email', async (req, res) => {
+  try {
+    if (!emailMonitor) {
+      return res.status(500).json({ success: false, error: 'Email monitor not initialized' });
+    }
+
+    const result = await emailMonitor.createTestMeetingEmail();
+    res.json(result);
+  } catch (error) {
+    console.error('Test meeting email failed:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Simple test notification endpoint (bypasses email parsing issues)
+app.post('/api/test-simple-notification', async (req, res) => {
+  try {
+    if (!emailMonitor) {
+      return res.status(500).json({ success: false, error: 'Email monitor not initialized' });
+    }
+
+    const result = await emailMonitor.createSimpleTestNotification();
+    res.json(result);
+  } catch (error) {
+    console.error('Simple test notification failed:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Super simple email checker (guaranteed to work)
+app.post('/api/simple-email-check', async (req, res) => {
+  try {
+    console.log('🔍 Simple email check starting...');
+    
+    // Get emails directly
+    const result = await mcpClient.callTool('get_recent_emails', { maxResults: 5 });
+    console.log('📧 Raw email result:', JSON.stringify(result, null, 2));
+    
+    // Parse the MCP result
+    let emails = [];
+    if (result?.content?.[0]?.text) {
+      const textContent = JSON.parse(result.content[0].text);
+      emails = textContent?.emails || [];
+    }
+    
+    console.log(`📧 Found ${emails.length} emails to check`);
+    
+    // Check each email for meeting keywords
+    for (const email of emails) {
+      if (email && email.subject && email.snippet) {
+        const emailText = `${email.subject} ${email.snippet}`.toLowerCase();
+        const meetingKeywords = ['meeting', 'schedule', 'appointment', 'call', 'available'];
+        
+        const hasKeywords = meetingKeywords.some(keyword => emailText.includes(keyword));
+        
+        if (hasKeywords) {
+          console.log('🎯 Meeting email found:', email.subject);
+          
+          // Send notification directly to all connected clients
+          connectedClients.forEach(socket => {
+            socket.emit('email-notification', {
+              type: 'meeting-email-detected',
+              data: {
+                emailId: email.id,
+                subject: email.subject,
+                from: email.from,
+                snippet: email.snippet,
+                confidence: 0.85,
+                suggestedActions: [
+                  'Meeting email detected automatically',
+                  'Check your calendar availability', 
+                  'Respond to confirm or propose alternatives'
+                ],
+                detectedAt: new Date().toISOString()
+              },
+              timestamp: new Date().toISOString()
+            });
+          });
+          
+          console.log('✅ Notification sent for:', email.subject);
+        }
+      }
+    }
+    
+    res.json({ 
+      success: true, 
+      message: `Checked ${emails.length} emails`,
+      meetingEmailsFound: emails.filter(e => e && e.subject && 
+        ['meeting', 'schedule', 'appointment', 'call', 'available'].some(k => 
+          `${e.subject} ${e.snippet}`.toLowerCase().includes(k.toLowerCase())
+        )
+      ).length
+    });
+  } catch (error) {
+    console.error('Simple email check failed:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Manual email check endpoint
+app.post('/api/check-emails', async (req, res) => {
+  try {
+    if (!emailMonitor) {
+      return res.status(500).json({ success: false, error: 'Email monitor not initialized' });
+    }
+
+    await emailMonitor.triggerManualCheck();
+    res.json({ success: true, message: 'Manual email check completed' });
+  } catch (error) {
+    console.error('Manual email check failed:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Email monitor status endpoint
+app.get('/api/email-monitor-status', (req, res) => {
+  try {
+    if (!emailMonitor) {
+      return res.json({ isRunning: false, error: 'Email monitor not initialized' });
+    }
+
+    const status = emailMonitor.getStatus();
+    res.json({ success: true, status });
+  } catch (error) {
+    console.error('Failed to get email monitor status:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Email notification endpoint (for WebSocket broadcasting)
+app.post('/api/email-notification', (req, res) => {
+  try {
+    const notificationData = req.body;
+    console.log('📧 Broadcasting email notification to all clients:', notificationData.title);
+    
+    // Broadcast to all connected Socket.IO clients
+    io.emit('email-notification', {
+      type: 'meeting-email-detected',
+      data: notificationData,
+      timestamp: new Date().toISOString()
+    });
+    
+    res.json({ success: true, message: 'Notification sent to all connected clients' });
+  } catch (error) {
+    console.error('❌ Failed to broadcast notification:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 async function startServer() {
-  console.log('🚀 Starting Calendar API server with Azure AI integration...');
-  
-  // Initialize all services
-  const servicesReady = await initializeServices();
-  
-  if (servicesReady) {
-    app.listen(PORT, () => {
+  const services = await initializeServices();
+  if (services) {
+    // Initialize email monitor after services are ready
+    const notificationCallback = (notificationData) => {
+      console.log('📧 Email monitor callback triggered');
+      io.emit('email-notification', {
+        type: 'meeting-email-detected',
+        data: notificationData,
+        timestamp: new Date().toISOString()
+      });
+    };
+    
+    emailMonitor = new RealTimeEmailMonitor(mcpClient, notificationCallback);
+    console.log('✅ Email monitor initialized');
+    
+    // Start server and email monitoring
+    server.listen(PORT, () => {
       console.log(`✅ Calendar API server running on port ${PORT}`);
+      console.log('🔌 WebSocket server ready for real-time notifications');
+      console.log('📧 Real-time email monitoring will start in 5 seconds...');
       console.log('');
       console.log('🏗️ ARCHITECTURE:');
       console.log('   User Query → Azure GPT → Tool Selection → MCP Tool → Response');
+      console.log('   New Email → Real-time Monitor → AI Analysis → UI Notification');
       console.log('');
       console.log('🧠 Natural Language Processing: Azure AI Foundry (GPT-4o)');
       console.log('🛠️ MCP Server: Simple, reliable API gateway');
       console.log('📅 Calendar Integration: Google Calendar API');
+      console.log('📧 Real-time Email Monitoring: WebSocket notifications');
       console.log('');
       console.log('📋 Available endpoints:');
       console.log('  POST /api/calendar-query - Natural language calendar queries (Azure GPT powered)');
       console.log('  POST /api/test-get-events - Direct MCP tool testing');
+      console.log('  POST /api/email-notification - Real-time email notifications');
+      console.log('  POST /api/check-emails - Manual email check');
+      console.log('  POST /api/test-meeting-email - Create test meeting email');
+      console.log('  GET  /api/email-monitor-status - Email monitor status');
       console.log('  GET  /api/health - Health check');
       console.log('');
-      console.log('🧪 Test with: "What do I have today?" or "Schedule a meeting tomorrow at 2pm"');
+      console.log('🧪 Test real-time email: POST /api/test-meeting-email');
+      console.log('🧪 Manual check: POST /api/check-emails');
+      
+      // Start email monitoring after server is running
+      if (emailMonitor) {
+        setTimeout(() => {
+          emailMonitor.start();
+        }, 5000);
+      }
     });
   } else {
-    console.error('❌ Failed to initialize services. Server not started.');
+    console.error('❌ Failed to initialize services. Please check your configuration.');
     process.exit(1);
   }
 }

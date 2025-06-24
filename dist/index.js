@@ -18,6 +18,19 @@ async function main() {
             serverVersion: config.mcp.serverVersion,
         });
         const server = new CalendarCopilotServer(config, logger);
+        await server.initialize({
+            azure: {
+                endpoint: config.azure.endpoint,
+                apiKey: config.azure.apiKey,
+                deploymentName: config.azure.deploymentName,
+                apiVersion: config.azure.apiVersion
+            },
+            google: {
+                clientId: config.google.clientId,
+                clientSecret: config.google.clientSecret,
+                redirectUri: config.google.redirectUri
+            }
+        });
         await server.start();
         process.on('SIGINT', () => {
             logger.info('Received SIGINT, shutting down gracefully...');

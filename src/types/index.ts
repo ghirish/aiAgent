@@ -120,6 +120,8 @@ export const ParsedQuerySchema = z.object({
     dateTime: z.string().optional(),
     duration: z.number().optional(),
     title: z.string().optional(),
+    currentTitle: z.string().optional(), // For updates: the existing event title to find
+    newTitle: z.string().optional(),     // For updates: the new title to change to
     attendees: z.array(z.string()).optional(),
     location: z.string().optional(),
     description: z.string().optional(),

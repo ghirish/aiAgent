@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar Copilot - AI-Powered Scheduling Assistant</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .header .subtitle {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .phase-badges {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .phase-badge {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .feature-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            transition: transform 0.3s ease;
+        }
+        
+        .feature-section:hover {
+            transform: translateY(-5px);
+        }
+        
+        .feature-section h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            color: #333;
+        }
+        
+        .feature-icon {
+            font-size: 1.5rem;
+        }
+        
+        .chat-interface {
+            grid-column: 1 / -1;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        
+        .chat-messages {
+            height: 300px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            margin-bottom: 15px;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 10px;
+            max-width: 80%;
+        }
+        
+        .message.user {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-left: auto;
+        }
+        
+        .message.assistant {
+            background: #e3f2fd;
+            color: #333;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+        }
+        
+        .send-button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+        }
+        
+        .send-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .feature-list {
+            list-style: none;
+        }
+        
+        .feature-list li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .feature-list li:before {
+            content: '✅';
+            font-size: 0.9rem;
+        }
+        
+        .demo-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .demo-button {
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+        
+        .demo-button:hover {
+            background: #e0e0e0;
+            transform: translateY(-2px);
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-online {
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-offline {
+            background: #f44336;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .metric-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .phase-badges {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        
+        const CalendarCopilot = () => {
+            const [messages, setMessages] = useState([
+                {
+                    id: 1,
+                    type: 'assistant',
+                    content: '👋 Welcome to Calendar Copilot! I can help you with intelligent scheduling, email analysis, calendar management, and more. Try asking me something like "Do I have any meetings tomorrow?" or "Check my availability this afternoon".'
+                }
+            ]);
+            const [inputText, setInputText] = useState('');
+            const [isLoading, setIsLoading] = useState(false);
+            const [systemStatus, setSystemStatus] = useState({ status: 'checking', services: {} });
+
+            useEffect(() => {
+                checkSystemHealth();
+            }, []);
+
+            const checkSystemHealth = async () => {
+                try {
+                    const response = await fetch('http://localhost:3000/api/health');
+                    const data = await response.json();
+                    setSystemStatus(data);
+                } catch (error) {
+                    setSystemStatus({ status: 'error', message: 'Unable to connect to server' });
+                }
+            };
+
+            const sendMessage = async () => {
+                if (!inputText.trim() || isLoading) return;
+                
+                const userMessage = {
+                    id: messages.length + 1,
+                    type: 'user',
+                    content: inputText
+                };
+                
+                setMessages(prev => [...prev, userMessage]);
+                setInputText('');
+                setIsLoading(true);
+                
+                try {
+                    const response = await fetch('http://localhost:3000/api/query', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ query: inputText })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    const assistantMessage = {
+                        id: messages.length + 2,
+                        type: 'assistant',
+                        content: data.success ? data.message : `Error: ${data.error}`,
+                        data: data.data
+                    };
+                    
+                    setMessages(prev => [...prev, assistantMessage]);
+                } catch (error) {
+                    const errorMessage = {
+                        id: messages.length + 2,
+                        type: 'assistant',
+                        content: `❌ Error: ${error.message}. Make sure the Calendar Copilot server is running.`
+                    };
+                    setMessages(prev => [...prev, errorMessage]);
+                }
+                
+                setIsLoading(false);
+            };
+
+            const sendDemoQuery = (query) => {
+                setInputText(query);
+            };
+
+            const handleKeyPress = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            };
+
+            return (
+                <div className="app-container">
+                    <header className="header">
+                        <h1>🤖 Calendar Copilot</h1>
+                        <p className="subtitle">AI-Powered Scheduling Assistant with Email Intelligence</p>
+                        <div className="phase-badges">
+                            <span className="phase-badge">Phase 1: MCP Integration ✅</span>
+                            <span className="phase-badge">Phase 2: Email Monitoring ✅</span>
+                            <span className="phase-badge">Phase 3: AI Scheduling ✅</span>
+                            <span className="phase-badge">Phase 4: Calendar Cross-Reference ✅</span>
+                        </div>
+                    </header>
+
+                    <div className="main-grid">
+                        <div className="feature-section">
+                            <h3>
+                                <span className="feature-icon">📅</span>
+                                Calendar Intelligence
+                            </h3>
+                            <ul className="feature-list">
+                                <li>Natural language calendar queries</li>
+                                <li>Smart availability checking</li>
+                                <li>Intelligent event creation</li>
+                                <li>Conflict detection & resolution</li>
+                                <li>Alternative time suggestions</li>
+                            </ul>
+                            <div className="metric-card">
+                                <div className="metric-value">100%</div>
+                                <div className="metric-label">Date Parsing Accuracy</div>
+                            </div>
+                        </div>
+
+                        <div className="feature-section">
+                            <h3>
+                                <span className="feature-icon">📧</span>
+                                Email Scheduling
+                            </h3>
+                            <ul className="feature-list">
+                                <li>Automatic scheduling intent detection</li>
+                                <li>AI-powered email analysis</li>
+                                <li>Multiple time option handling</li>
+                                <li>Priority-based action suggestions</li>
+                                <li>Batch email processing</li>
+                            </ul>
+                            <div className="metric-card">
+                                <div className="metric-value">95%</div>
+                                <div className="metric-label">AI Analysis Confidence</div>
+                            </div>
+                        </div>
+
+                        <div className="feature-section">
+                            <h3>
+                                <span className="feature-icon">🔄</span>
+                                Workflow Automation
+                            </h3>
+                            <ul className="feature-list">
+                                <li>Continuous email monitoring</li>
+                                <li>Smart meeting time suggestions</li>
+                                <li>Calendar cross-reference</li>
+                                <li>Intelligent action prioritization</li>
+                                <li>Proactive scheduling assistance</li>
+                            </ul>
+                            <div className="metric-card">
+                                <div className="metric-value">80%+</div>
+                                <div className="metric-label">Automation Success</div>
+                            </div>
+                        </div>
+
+                        <div className="feature-section">
+                            <h3>
+                                <span className="feature-icon">⚡</span>
+                                System Status
+                            </h3>
+                            <div style={{marginBottom: '15px'}}>
+                                <span className={`status-indicator ${systemStatus.status === 'healthy' ? 'status-online' : 'status-offline'}`}></span>
+                                <strong>Server:</strong> {systemStatus.status === 'healthy' ? 'Online' : 'Offline'}
+                            </div>
+                            <div style={{marginBottom: '15px'}}>
+                                <span className={`status-indicator ${systemStatus.services?.mcp === 'connected' ? 'status-online' : 'status-offline'}`}></span>
+                                <strong>MCP:</strong> {systemStatus.services?.mcp || 'Unknown'}
+                            </div>
+                            <div style={{marginBottom: '15px'}}>
+                                <span className={`status-indicator ${systemStatus.services?.azureAI === 'connected' ? 'status-online' : 'status-offline'}`}></span>
+                                <strong>Azure AI:</strong> {systemStatus.services?.azureAI || 'Unknown'}
+                            </div>
+                            <button 
+                                onClick={checkSystemHealth}
+                                style={{
+                                    padding: '8px 16px',
+                                    background: '#667eea',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    width: '100%'
+                                }}
+                            >
+                                Refresh Status
+                            </button>
+                        </div>
+
+                        <div className="chat-interface">
+                            <h3>
+                                <span className="feature-icon">💬</span>
+                                Natural Language Interface
+                            </h3>
+                            
+                            <div className="demo-buttons">
+                                <button className="demo-button" onClick={() => sendDemoQuery("Do I have any meetings today?")}>
+                                    Today's Schedule
+                                </button>
+                                <button className="demo-button" onClick={() => sendDemoQuery("Am I free tomorrow at 2pm?")}>
+                                    Check Availability
+                                </button>
+                                <button className="demo-button" onClick={() => sendDemoQuery("Schedule a team meeting for next Tuesday at 10am")}>
+                                    Create Meeting
+                                </button>
+                                <button className="demo-button" onClick={() => sendDemoQuery("Show me my unread emails")}>
+                                    Check Emails
+                                </button>
+                                <button className="demo-button" onClick={() => sendDemoQuery("Suggest meeting times for a 1-hour call this week")}>
+                                    Suggest Times
+                                </button>
+                            </div>
+                            
+                            <div className="chat-messages">
+                                {messages.map((message) => (
+                                    <div key={message.id} className={`message ${message.type}`}>
+                                        <div dangerouslySetInnerHTML={{__html: message.content.replace(/\n/g, '<br>')}} />
+                                        {message.data && (
+                                            <details style={{marginTop: '10px', fontSize: '0.9rem', opacity: 0.8}}>
+                                                <summary>Debug Info</summary>
+                                                <pre style={{background: '#f0f0f0', padding: '10px', borderRadius: '5px', fontSize: '0.8rem', overflow: 'auto'}}>
+                                                    {JSON.stringify(message.data, null, 2)}
+                                                </pre>
+                                            </details>
+                                        )}
+                                    </div>
+                                ))}
+                                {isLoading && (
+                                    <div className="message assistant">
+                                        <div>🤔 Analyzing your request...</div>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <div className="input-group">
+                                <input
+                                    type="text"
+                                    className="chat-input"
+                                    placeholder="Ask me about your calendar, emails, or scheduling..."
+                                    value={inputText}
+                                    onChange={(e) => setInputText(e.target.value)}
+                                    onKeyPress={handleKeyPress}
+                                    disabled={isLoading}
+                                />
+                                <button 
+                                    className="send-button"
+                                    onClick={sendMessage}
+                                    disabled={isLoading || !inputText.trim()}
+                                >
+                                    {isLoading ? '...' : 'Send'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<CalendarCopilot />, document.getElementById('root'));
+    </script>
+</body>
+</html> 

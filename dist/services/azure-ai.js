@@ -17,42 +17,16 @@ export class AzureAIService {
             this.logger.debug('Parsing calendar query', { query });
             const currentDate = new Date().toISOString().split('T')[0];
             const currentDateTime = new Date().toISOString();
-            let systemPrompt = `You are a calendar assistant that extracts intent and entities from natural language queries about calendar events.
+            let systemPrompt = `Extract intent and entities from calendar queries. Return valid JSON without markdown formatting.
 
-CURRENT DATE CONTEXT: Today is ${currentDate} (${currentDateTime})
+EXAMPLES:
+"Change test meeting to Project Review" → {"intent": "update", "entities": {"currentTitle": "test meeting", "newTitle": "Project Review"}, "confidence": 0.95}
+"What do I have today?" → {"intent": "query", "entities": {"dateTime": "${currentDate}"}, "confidence": 0.95}
+"Schedule meeting tomorrow 2pm" → {"intent": "schedule", "entities": {"dateTime": "tomorrow 2pm"}, "confidence": 0.95}
 
-AVAILABLE INTENTS:
-- schedule: User wants to create/book a new event
-- query: User wants to find/list existing events
-- update: User wants to modify an existing event
-- cancel: User wants to delete/cancel an event
-- availability: User wants to check free/busy time
-- email_query: User wants to see/search emails
-- email_search: User wants to search for specific emails
+For updates: currentTitle = what to find, newTitle = what to change it to.
 
-Extract the following information and respond ONLY with valid JSON:
-{
-  "intent": "one_of_the_intents_above",
-  "entities": {
-    "dateTime": "ISO string if specific time mentioned, null otherwise",
-    "duration": "number in minutes if mentioned, null otherwise", 
-    "title": "event title/subject if mentioned, null otherwise",
-    "attendees": ["array", "of", "email", "addresses"] or null,
-    "location": "location string if mentioned, null otherwise",
-    "description": "additional details if mentioned, null otherwise"
-  },
-  "confidence": 0.95
-}
-
-Examples:
-- "Schedule a meeting with john@example.com tomorrow at 2pm for 1 hour" 
-- "What meetings do I have next week?"
-- "Cancel my 3pm meeting today"
-- "Am I free on Friday afternoon?"
-- "Show me my recent emails" → intent: "email_query"
-- "Get my unread emails" → intent: "email_query"
-- "Search for emails about meetings" → intent: "email_search"
-- "Find emails from john@example.com" → intent: "email_search"`;
+Return JSON only:`;
             if (conversationContext) {
                 systemPrompt += `
 
@@ -65,19 +39,26 @@ CONVERSATION CONTEXT:
 The user is providing additional information to complete their original request. Merge the new information with the existing context.`;
             }
             const response = await this.openai.getChatCompletions(this.deploymentName, [
-                { role: 'system', content: systemPrompt },
+                {
+                    role: 'system',
+                    content: `You extract calendar intent from queries. For "Change X to Y" patterns, X is the current title to find, Y is the new title to set.
+
+Return JSON: {"intent": "update", "entities": {"currentTitle": "X", "newTitle": "Y"}, "confidence": 0.95}`
+                },
                 { role: 'user', content: query }
             ], {
-                temperature: 0.1,
-                maxTokens: 500,
+                temperature: 0.0,
+                maxTokens: 200,
             });
             const content = response.choices[0]?.message?.content;
             if (!content) {
                 throw new Error('No response from Azure AI');
             }
+            console.log('🔍 RAW GPT-4 RESPONSE:', content);
             let parsedQuery;
             try {
-                parsedQuery = JSON.parse(content);
+                const cleanContent = content.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
+                parsedQuery = JSON.parse(cleanContent);
             }
             catch (parseError) {
                 this.logger.warn('Failed to parse AI response as JSON', { content });
@@ -127,12 +108,24 @@ The user is providing additional information to complete their original request.
         const now = new Date();
         const chronoResults = chrono.parse(query, now);
         const dateTime = chronoResults.length > 0 ? chronoResults[0].start.date().toISOString() : undefined;
+        let currentTitle = undefined;
+        let newTitle = undefined;
+        if (intent === 'update') {
+            const changeToPattern = /(?:change|update|rename)\s+(.+?)\s+to\s+(.+?)(?:\s|$)/i;
+            const match = query.match(changeToPattern);
+            if (match) {
+                currentTitle = match[1].trim();
+                newTitle = match[2].trim();
+            }
+        }
         return {
             intent,
             entities: {
                 dateTime,
                 duration: this.extractDuration(query),
                 title: this.extractTitle(query),
+                currentTitle,
+                newTitle,
                 attendees: this.extractEmails(query),
                 location: undefined,
                 description: undefined,
@@ -461,5 +454,159 @@ Consider:
                 ],
             };
         }
+    }
+    async generateSchedulingResponse(params) {
+        try {
+            this.logger.debug('Generating scheduling response', {
+                responseType: params.responseType,
+                originalSubject: params.originalEmail.subject
+            });
+            const systemPrompt = `You are a professional email assistant that generates responses to scheduling requests. 
+Generate a professional, friendly, and clear email response based on the user's requirements.
+
+Response Types:
+- accept: Confirm the proposed time and express enthusiasm
+- counter-propose: Politely suggest alternative times
+- decline: Professionally decline with a reason
+- request-info: Ask for clarification or additional details
+
+Guidelines:
+- Be professional but warm
+- Be concise but complete
+- Include relevant details (location, duration, agenda if provided)
+- Use appropriate tone for business communication
+- If accepting, express enthusiasm for the meeting
+- If counter-proposing, provide specific alternatives
+- If declining, be apologetic but clear
+- Always be respectful and helpful
+
+Return valid JSON only:
+{
+  "subject": "Re: [original subject]",
+  "body": "email body with proper formatting",
+  "tone": "professional|friendly|formal",
+  "urgency": "low|medium|high"
+}`;
+            const userPrompt = this.buildResponsePrompt(params);
+            const response = await this.openai.getChatCompletions(this.deploymentName, [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt }
+            ], {
+                temperature: 0.3,
+                maxTokens: 800,
+            });
+            const content = response.choices[0]?.message?.content;
+            if (!content) {
+                throw new Error('No response from Azure AI');
+            }
+            let responseData;
+            try {
+                const cleanContent = content.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
+                responseData = JSON.parse(cleanContent);
+            }
+            catch (parseError) {
+                this.logger.warn('Failed to parse AI response as JSON', { content });
+                responseData = this.generateFallbackResponse(params);
+            }
+            this.logger.info('Generated scheduling response', {
+                responseType: params.responseType,
+                tone: responseData.tone
+            });
+            return responseData;
+        }
+        catch (error) {
+            this.logger.logError(error, 'Failed to generate scheduling response');
+            return this.generateFallbackResponse(params);
+        }
+    }
+    buildResponsePrompt(params) {
+        let prompt = `Original Email:
+Subject: ${params.originalEmail.subject}
+From: ${params.originalEmail.from}
+Content: ${params.originalEmail.content}
+
+Response Type: ${params.responseType}
+`;
+        if (params.selectedTime) {
+            prompt += `Selected Time: ${params.selectedTime}\n`;
+        }
+        if (params.counterProposals && params.counterProposals.length > 0) {
+            prompt += `Counter-Proposals: ${params.counterProposals.join(', ')}\n`;
+        }
+        if (params.reason) {
+            prompt += `Reason: ${params.reason}\n`;
+        }
+        if (params.additionalMessage) {
+            prompt += `Additional Message: ${params.additionalMessage}\n`;
+        }
+        if (params.includeCalendarInvite) {
+            prompt += `Include mention of calendar invite: Yes\n`;
+        }
+        if (params.meetingDetails) {
+            prompt += `Meeting Details:\n`;
+            if (params.meetingDetails.location) {
+                prompt += `- Location: ${params.meetingDetails.location}\n`;
+            }
+            if (params.meetingDetails.duration) {
+                prompt += `- Duration: ${params.meetingDetails.duration} minutes\n`;
+            }
+            if (params.meetingDetails.agenda) {
+                prompt += `- Agenda: ${params.meetingDetails.agenda}\n`;
+            }
+        }
+        prompt += `\nGenerate a professional email response based on the above information.`;
+        return prompt;
+    }
+    generateFallbackResponse(params) {
+        const originalSubject = params.originalEmail.subject;
+        const subject = originalSubject.startsWith('Re:') ? originalSubject : `Re: ${originalSubject}`;
+        let body = `Dear ${params.originalEmail.from.split('@')[0]},\n\nThank you for your email regarding ${originalSubject}.\n\n`;
+        switch (params.responseType) {
+            case 'accept':
+                body += `I'm pleased to confirm that ${params.selectedTime || 'the proposed time'} works well for me. `;
+                body += `I look forward to our meeting.\n\n`;
+                if (params.additionalMessage) {
+                    body += `${params.additionalMessage}\n\n`;
+                }
+                body += `I'll send a calendar invite to confirm the details.`;
+                break;
+            case 'counter-propose':
+                body += `Thank you for the meeting request. Unfortunately, ${params.selectedTime || 'the proposed time'} doesn't work for my schedule. `;
+                if (params.counterProposals && params.counterProposals.length > 0) {
+                    body += `However, I'm available at the following times:\n\n`;
+                    params.counterProposals.forEach(time => {
+                        body += `- ${time}\n`;
+                    });
+                    body += `\nPlease let me know which option works best for you.`;
+                }
+                else {
+                    body += `Could you suggest some alternative times that might work better?`;
+                }
+                break;
+            case 'decline':
+                body += `Thank you for thinking of me for this meeting. Unfortunately, I won't be able to attend`;
+                if (params.reason) {
+                    body += ` due to ${params.reason}`;
+                }
+                body += `.\n\nI apologize for any inconvenience this may cause.`;
+                if (params.additionalMessage) {
+                    body += ` ${params.additionalMessage}`;
+                }
+                break;
+            case 'request-info':
+                body += `I'd be happy to meet with you. To help me prepare and confirm the details, could you please provide:\n\n`;
+                body += `- The specific purpose/agenda for our meeting\n`;
+                body += `- Your preferred duration\n`;
+                body += `- Any materials I should review beforehand\n\n`;
+                body += `Once I have these details, I'll be able to confirm a suitable time.`;
+                break;
+        }
+        body += `\n\nBest regards,\n[Your Name]`;
+        return {
+            subject,
+            body,
+            tone: 'professional',
+            urgency: 'medium'
+        };
     }
 }

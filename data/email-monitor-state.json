@@ -1,5 +1,5 @@
 {
-  "lastChecked": "2025-06-23T06:16:03.328Z",
+  "lastChecked": "2025-06-24T05:21:10.125Z",
   "processedEmails": [
     "test_001",
     "test_002",
@@ -8,8 +8,30 @@
     "19797bd8926a8aba",
     "1979523e6bc14b47",
     "19795211bd71cf73",
-    "19794b0cc5ef31ef"
+    "19794b0cc5ef31ef",
+    "1979303a46fe96a0",
+    "19792a47eabe111a",
+    "197915659d69c51f",
+    "1979e04da6f381a2",
+    "1979d02bea3a3097",
+    "1979c7593f36f277",
+    "1978f28d499dd26c",
+    "1978e4598136a519",
+    "1978e12d9e77d969",
+    "1978db2903afdd47",
+    "1978d7274097fed2",
+    "1978d7233587009b",
+    "1978c3e42b957317",
+    "1978b19aed69849b",
+    "1978ae0e0e532f57",
+    "1979f0db1015f7c7",
+    "1979f09f0f1b57bc",
+    "197a0166fc34d9e0",
+    "197a01f2c69ade7c",
+    "197a03f06258d4fc",
+    "197a047cfdc62b06",
+    "197a04f9f83fbdc5"
   ],
-  "totalEmailsProcessed": 8,
-  "schedulingEmailsFound": 2
+  "totalEmailsProcessed": 30,
+  "schedulingEmailsFound": 7
 }

@@ -14,9 +14,23 @@ class MCPClient {
       console.log('🚀 Starting MCP server...');
       
       const mcpPath = path.resolve(__dirname, '../dist/index.js');
+      
+      // Pass environment variables to the MCP server process
+      const env = {
+        ...process.env,
+        GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+        GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+        GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI,
+        AZURE_OPENAI_ENDPOINT: process.env.AZURE_OPENAI_ENDPOINT,
+        AZURE_OPENAI_API_KEY: process.env.AZURE_OPENAI_API_KEY,
+        AZURE_OPENAI_DEPLOYMENT_NAME: process.env.AZURE_OPENAI_DEPLOYMENT_NAME,
+        AZURE_OPENAI_API_VERSION: process.env.AZURE_OPENAI_API_VERSION
+      };
+      
       this.server = spawn('node', [mcpPath], {
         stdio: ['pipe', 'pipe', 'pipe'],
-        cwd: path.resolve(__dirname, '..')
+        cwd: path.resolve(__dirname, '..'),
+        env
       });
 
       // Set up error handling

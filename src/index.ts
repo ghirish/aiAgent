@@ -37,6 +37,21 @@ async function main(): Promise<void> {
     // Initialize MCP server
     const server = new CalendarCopilotServer(config, logger);
     
+    // Initialize services with configuration
+    await server.initialize({
+      azure: {
+        endpoint: config.azure.endpoint,
+        apiKey: config.azure.apiKey,
+        deploymentName: config.azure.deploymentName,
+        apiVersion: config.azure.apiVersion
+      },
+      google: {
+        clientId: config.google.clientId,
+        clientSecret: config.google.clientSecret,
+        redirectUri: config.google.redirectUri
+      }
+    });
+    
     // Start the server
     await server.start();
     

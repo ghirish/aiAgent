@@ -26,12 +26,14 @@
     "@azure/openai": "^1.0.0-beta.12",
     "@modelcontextprotocol/sdk": "^0.4.0",
     "@tailwindcss/postcss": "^4.1.10",
+    "axios": "^1.10.0",
     "chrono-node": "^2.8.3",
     "date-fns": "^3.0.6",
     "date-fns-tz": "^3.2.0",
     "dotenv": "^16.5.0",
     "google-auth-library": "^9.4.0",
     "googleapis": "^128.0.0",
+    "socket.io-client": "^4.8.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {

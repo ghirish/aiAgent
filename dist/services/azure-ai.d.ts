@@ -46,4 +46,30 @@ export declare class AzureAIService {
             type: string;
         }>;
     }>;
+    generateSchedulingResponse(params: {
+        originalEmail: {
+            subject: string;
+            from: string;
+            content: string;
+            proposedTimes?: string[];
+        };
+        responseType: 'accept' | 'counter-propose' | 'decline' | 'request-info';
+        selectedTime?: string;
+        counterProposals?: string[];
+        reason?: string;
+        additionalMessage?: string;
+        includeCalendarInvite?: boolean;
+        meetingDetails?: {
+            location?: string;
+            duration?: number;
+            agenda?: string;
+        };
+    }): Promise<{
+        subject: string;
+        body: string;
+        tone: string;
+        urgency: 'low' | 'medium' | 'high';
+    }>;
+    private buildResponsePrompt;
+    private generateFallbackResponse;
 }

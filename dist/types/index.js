@@ -96,6 +96,8 @@ export const ParsedQuerySchema = z.object({
         dateTime: z.string().optional(),
         duration: z.number().optional(),
         title: z.string().optional(),
+        currentTitle: z.string().optional(),
+        newTitle: z.string().optional(),
         attendees: z.array(z.string()).optional(),
         location: z.string().optional(),
         description: z.string().optional(),

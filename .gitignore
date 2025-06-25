@@ -74,3 +74,8 @@ jspm_packages/
 .Trashes
 ehthumbs.db
 Thumbs.db 
+# Environment files with sensitive data
+.env
+.env.local
+.env.*.local
+calendar-copilot-frontend/.env

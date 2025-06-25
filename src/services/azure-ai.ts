@@ -100,6 +100,15 @@ Return JSON: {"intent": "update", "entities": {"currentTitle": "X", "newTitle": 
         // Remove markdown code block wrapping if present
         const cleanContent = content.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
         parsedQuery = JSON.parse(cleanContent);
+        
+        // Check if intent is null or invalid (including non-enum values)
+        const validIntents = ['schedule', 'query', 'update', 'cancel', 'availability', 'email_query', 'email_search'];
+        if (!parsedQuery.intent || parsedQuery.intent === null || !validIntents.includes(parsedQuery.intent)) {
+          console.log('🚨 GPT-4 returned invalid intent:', parsedQuery.intent, 'using fallback');
+          parsedQuery = await this.fallbackParse(query);
+        }
+        
+
       } catch (parseError) {
         this.logger.warn('Failed to parse AI response as JSON', { content });
         // Fallback to basic parsing

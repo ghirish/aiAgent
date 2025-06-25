@@ -173,7 +173,7 @@ export interface LogContext {
   [key: string]: unknown;
 }
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error'; 
 
 // Gmail Types
 export const GmailMessageSchema = z.object({

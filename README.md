@@ -1,6 +1,6 @@
-# 📅 Calendar Copilot - AI-Powered Email-to-Calendar Assistant
+# 📧 Cal mail AI - Google Calendar & Gmail AI Agent
 
-An intelligent, real-time calendar management system that automatically detects meeting requests in emails, analyzes scheduling intent using Azure AI, and generates professional responses with seamless calendar integration.
+An intelligent, real-time calendar management AI agent built on **Model Context Protocol (MCP)** architecture that seamlessly integrates with Google Calendar and Gmail, automatically detecting meeting requests in emails, analyzing scheduling intent using GPT-4 model hosted on Azure AI Foundry, and generating professional responses with seamless calendar integration - designed as a dedicated AI assistant inspired by Teams-style AI agents.
 
 ## 🌟 Key Features
 
@@ -16,11 +16,11 @@ An intelligent, real-time calendar management system that automatically detects 
 - **Custom message integration** and meeting details handling
 - **Calendar invite generation** for accepted meetings
 
-### 🎨 **Interactive User Interface**
+### 🎨 **Teams-Inspired Interactive Interface**
 - **Real-time notification panel** with action buttons
 - **Response editing modal** with live preview
 - **Status tracking** (generating → editing → sending → sent)
-- **Professional UI styling** with color-coded workflow states
+- **Professional UI styling** with Teams-inspired workflow states
 
 ### 📊 **Advanced Calendar Operations**
 - **Natural language processing** for calendar queries
@@ -38,10 +38,32 @@ User Response Selection → AI Generation → Edit Modal → Send Response
 ### **Core Components:**
 - **Backend API** (Node.js/Express) - Port 3000
 - **Frontend UI** (React/TypeScript) - Port 3001  
-- **MCP Server** - Model Context Protocol integration
+- **MCP Server** - **Model Context Protocol** for standardized AI tool integration
 - **Real-time Monitor** - Email polling and WebSocket broadcasting
-- **Azure AI Service** - GPT-4o for scheduling analysis
-- **Google APIs** - Calendar and Gmail integration
+- **Azure AI Service** - GPT-4o for scheduling analysis via MCP tools
+- **Google APIs** - Calendar and Gmail integration through MCP interface
+
+## 🔧 **MCP (Model Context Protocol) Integration**
+
+This project showcases **Model Context Protocol** as a core architectural pattern for building AI agents:
+
+### **Why MCP?**
+- **Standardized Tool Interface**: MCP provides a consistent way for AI models to interact with external services
+- **Tool Composability**: Calendar, email, and AI analysis tools work together seamlessly
+- **Protocol-First Design**: Clean separation between AI reasoning and tool execution
+- **Extensible Architecture**: Easy to add new tools and capabilities
+
+### **MCP Tools Implemented:**
+- **Calendar Operations**: `get_events`, `create_event`, `check_availability`, `find_slots`
+- **Email Management**: `get_emails`, `search_emails`, `draft_response`, `send_reply`
+- **AI Analysis**: `process_natural_query`, `analyze_scheduling_intent`
+
+### **MCP Workflow:**
+1. **Frontend** sends natural language query to Backend API
+2. **Backend** forwards query to MCP Server via stdin/stdout communication
+3. **MCP Server** uses Azure AI to determine which tools to call
+4. **AI Model** executes appropriate MCP tools (calendar, email, analysis)
+5. **Results** flow back through MCP → Backend → Frontend with real-time updates
 
 ## 🚀 Quick Start
 
@@ -56,7 +78,7 @@ git clone <repository-url>
 cd aiAgent
 npm install
 cd calendar-api && npm install
-cd ../calendar-copilot-frontend && npm install
+cd ../calmail-ai-frontend && npm install
 ```
 
 ### 2. Environment Setup
@@ -72,7 +94,7 @@ AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o
 JWT_SECRET=your_jwt_secret
 ENCRYPTION_KEY=your_encryption_key
 
-# calendar-copilot-frontend/.env
+# calmail-ai-frontend/.env
 PORT=3001
 ```
 
@@ -89,7 +111,7 @@ PORT=3001
 cd calendar-api && npm start
 
 # Terminal 2: Frontend  
-cd calendar-copilot-frontend && npm start
+cd calmail-ai-frontend && npm start
 ```
 
 ### 5. Test the System
@@ -133,31 +155,41 @@ node test-phase6-complete-workflow.js
 - `POST /api/send-response` - Send email responses
 - `POST /api/email-notification` - WebSocket notification
 
-### **Calendar Operations** 
-- `POST /api/natural-query` - Natural language calendar queries
-- All operations via MCP server integration
+### **Calendar Operations (via MCP)** 
+- `POST /api/natural-query` - Natural language calendar queries processed through MCP
+- `POST /api/calendar-query` - Direct MCP server communication for calendar operations
+- All calendar operations leverage MCP tools for standardized AI-service integration
 
 ## 🛠️ MCP Tools Available
 
-### **Calendar Management**
-- `get_calendar_events` - Retrieve calendar events
-- `check_availability` - Check time availability  
-- `create_event` - Create new calendar events
-- `update_event` - Modify existing events
-- `cancel_event` - Cancel/delete events
-- `find_meeting_slots` - Find optimal meeting times
-- `get_calendar_summary` - Daily/weekly summaries
+The power of **Model Context Protocol** shines through our comprehensive tool ecosystem:
 
-### **Email Operations**
-- `get_recent_emails` - Fetch recent emails
-- `get_unread_emails` - Get unread messages
-- `search_emails` - Search email content
-- `draft_scheduling_response` - Generate responses
-- `send_email_response` - Send email replies
+### **Calendar Management Tools**
+- `get_calendar_events` - Retrieve calendar events with intelligent filtering
+- `check_availability` - Check time availability across multiple calendars  
+- `create_event` - Create new calendar events with conflict detection
+- `update_event` - Modify existing events through natural language
+- `cancel_event` - Cancel/delete events with confirmation workflows
+- `find_meeting_slots` - Find optimal meeting times using AI reasoning
+- `get_calendar_summary` - Generate daily/weekly summaries with insights
 
-### **AI Analysis**
-- `process_natural_query` - Natural language processing
-- `analyze_email_for_scheduling` - Meeting intent detection
+### **Email Operations Tools**
+- `get_recent_emails` - Fetch recent emails with smart filtering
+- `get_unread_emails` - Get unread messages with priority detection
+- `search_emails` - Search email content using semantic understanding
+- `draft_scheduling_response` - Generate contextual email responses
+- `send_email_response` - Send email replies with calendar integration
+
+### **AI Analysis Tools**
+- `process_natural_query` - Natural language processing with intent recognition
+- `analyze_email_for_scheduling` - Advanced meeting intent detection and extraction
+
+### **MCP Architecture Benefits:**
+- ✅ **Tool Discoverability**: AI can explore available tools dynamically
+- ✅ **Composable Operations**: Tools work together for complex workflows
+- ✅ **Type Safety**: Structured input/output with JSON schema validation
+- ✅ **Error Handling**: Graceful fallbacks when tools are unavailable
+- ✅ **Extensibility**: Easy to add new tools without changing core logic
 
 ## 🔒 Security Features
 
@@ -191,6 +223,7 @@ node test-phase6-complete-workflow.js
 ## 🎯 What's Next
 
 ### **Immediate Enhancements**
+- [ ] **Microsoft Teams integration** - Native Teams app support
 - [ ] **Multi-calendar support** - Integrate multiple Google accounts
 - [ ] **Smart scheduling rules** - User preference learning system
 - [ ] **Email templates** - Customizable response templates

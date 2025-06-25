@@ -354,7 +354,7 @@ const CalendarInput: React.FC<CalendarInputProps> = ({
         start: slot.start,
         end: slot.end,
         location: extractLocation(prompt) || 'TBD',
-        description: `Created from Calendar Copilot suggestion: "${prompt}"`
+        description: `Created from Cal mail AI suggestion: "${prompt}"`
       };
 
       const response = await fetch('http://localhost:3001/api/create-event', {
@@ -461,7 +461,7 @@ const CalendarInput: React.FC<CalendarInputProps> = ({
                   className="submit-button"
                   disabled={isLoading || !prompt.trim()}
                 >
-                  {isLoading ? 'Processing...' : '🤖 Ask Calendar Copilot'}
+                  {isLoading ? 'Processing...' : '🤖 Ask Cal mail AI'}
                 </button>
               </div>
             </div>

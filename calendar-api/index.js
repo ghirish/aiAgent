@@ -7,6 +7,7 @@ const { MCPClient } = require('./mcp-client.cjs');
 const http = require('http');
 const { Server } = require('socket.io');
 const { RealTimeEmailMonitor } = require('./real-time-email-monitor.js');
+const chrono = require('chrono-node');
 
 const app = express();
 app.use(cors());
@@ -97,10 +98,10 @@ app.post('/api/test-get-events', async (req, res) => {
     let result;
     if (toolName === 'get_calendar_events') {
       result = await mcpClient.callTool('get_calendar_events', {
-        timeMin,
-        timeMax,
-        maxResults: 10
-      });
+      timeMin,
+      timeMax,
+      maxResults: 10
+    });
     } else {
       // Test any MCP tool with provided parameters
       result = await mcpClient.callTool(toolName, params);
@@ -383,14 +384,36 @@ app.post('/api/calendar-query', async (req, res) => {
           // Fix: Handle date-only strings properly to avoid timezone issues
           let targetDate;
           
+          try {
           if (parsedQuery.entities.dateTime.includes('T')) {
             // Has time component - parse normally
             targetDate = new Date(parsedQuery.entities.dateTime);
           } else {
             // Date-only string (like "2025-06-22") - parse as local date to avoid timezone shift
             const dateStr = parsedQuery.entities.dateTime;
+              if (dateStr.includes('-')) {
             const [year, month, day] = dateStr.split('-').map(Number);
             targetDate = new Date(year, month - 1, day); // month is 0-indexed
+              } else {
+                // Handle relative dates like "today", "tomorrow"
+                const now = new Date();
+                const chronoResults = chrono.parse(parsedQuery.entities.dateTime, now);
+                if (chronoResults.length > 0) {
+                  targetDate = chronoResults[0].start.date();
+                } else {
+                  targetDate = now; // Fallback to today
+                }
+              }
+            }
+            
+            // Validate the parsed date
+            if (isNaN(targetDate.getTime())) {
+              console.warn(`Invalid date parsed: "${parsedQuery.entities.dateTime}", using today`);
+              targetDate = new Date();
+            }
+          } catch (error) {
+            console.warn(`Date parsing error for "${parsedQuery.entities.dateTime}":`, error.message);
+            targetDate = new Date(); // Fallback to today
           }
           
           // Create day boundaries using the corrected target date
@@ -417,6 +440,7 @@ app.post('/api/calendar-query', async (req, res) => {
         break;
 
       case 'schedule':
+      case 'create':
         // STEP 1: Parse the requested time and duration
         let requestedStartDateTime, requestedEndDateTime, requestedDuration;
         
@@ -424,25 +448,42 @@ app.post('/api/calendar-query', async (req, res) => {
           // Parse the dateTime properly to preserve the intended local time
           let localDateTime;
           
+          try {
           // Check for timezone indicators: Z, +HH:MM, or -HH:MM (but not date hyphens)
           const hasTimezone = parsedQuery.entities.dateTime.includes('Z') || 
                              /[+-]\d{2}:\d{2}$/.test(parsedQuery.entities.dateTime);
           
           if (!hasTimezone) {
             // No timezone info - treat as local time and format for Google Calendar
-            // Parse the date components manually to avoid timezone confusion
             const dateTimeStr = parsedQuery.entities.dateTime;
+              
             if (dateTimeStr.includes('T')) {
               // Has time component like "2025-06-22T14:00:00"
               const [datePart, timePart] = dateTimeStr.split('T');
               const [year, month, day] = datePart.split('-').map(Number);
               const [hour, minute, second = 0] = timePart.split(':').map(Number);
               localDateTime = new Date(year, month - 1, day, hour, minute, second);
-            } else {
-              // Date only - default to current time
+              } else if (dateTimeStr.includes('-')) {
+                // Date only like "2025-06-22" - default to current time
               const [year, month, day] = dateTimeStr.split('-').map(Number);
               const now = new Date();
               localDateTime = new Date(year, month - 1, day, now.getHours(), now.getMinutes());
+              } else {
+                // Handle relative dates like "tomorrow 3pm", "Tuesday at 3pm"
+                const now = new Date();
+                const chronoResults = chrono.parse(parsedQuery.entities.dateTime, now);
+                if (chronoResults.length > 0) {
+                  localDateTime = chronoResults[0].start.date();
+                } else {
+                  console.warn(`Cannot parse date: "${dateTimeStr}", using current time`);
+                  localDateTime = new Date();
+                }
+              }
+              
+              // Validate the parsed date
+              if (isNaN(localDateTime.getTime())) {
+                console.warn(`Invalid date parsed: "${dateTimeStr}", using current time`);
+                localDateTime = new Date();
             }
             
             // Format as ISO string but preserve local time intention
@@ -450,12 +491,24 @@ app.post('/api/calendar-query', async (req, res) => {
           } else {
             // Has timezone info - use as is
             requestedStartDateTime = parsedQuery.entities.dateTime;
+            }
+          } catch (error) {
+            console.warn(`Date parsing error for "${parsedQuery.entities.dateTime}":`, error.message);
+            requestedStartDateTime = new Date().toISOString(); // Fallback to current time
           }
           
           // Calculate end time by adding duration to the start time
           requestedDuration = parsedQuery.entities.duration || 60; // Default 1 hour
           const durationMs = requestedDuration * 60000;
+          
+          try {
           requestedEndDateTime = new Date(new Date(requestedStartDateTime).getTime() + durationMs).toISOString();
+          } catch (error) {
+            console.warn(`Error calculating end time:`, error.message);
+            const fallbackStart = new Date();
+            requestedStartDateTime = fallbackStart.toISOString();
+            requestedEndDateTime = new Date(fallbackStart.getTime() + durationMs).toISOString();
+          }
         } else {
           // Default to current time
           requestedStartDateTime = new Date().toISOString();
@@ -542,6 +595,7 @@ app.post('/api/calendar-query', async (req, res) => {
         break;
 
       case 'availability':
+      case 'check_availability':
         mcpToolName = 'check_availability';
         
         if (parsedQuery.entities.dateTime) {
@@ -795,16 +849,26 @@ app.post('/api/calendar-query', async (req, res) => {
       } else {
         // Normal event listing
         if (events.success && events.totalEvents > 0) {
-          responseMessage = `Found ${events.totalEvents} event(s):\n`;
+          responseMessage = `📅 Found ${events.totalEvents} event(s):\n\n`;
           events.events.forEach((event, i) => {
             const time = new Date(event.start).toLocaleTimeString('en-US', { 
               hour: 'numeric', 
               minute: '2-digit', 
               hour12: true 
             });
-            responseMessage += `${i + 1}. ${event.title} at ${time}`;
-            if (event.location) responseMessage += ` (${event.location})`;
-            responseMessage += '\n';
+            const date = new Date(event.start).toLocaleDateString('en-US', { 
+              weekday: 'short', 
+              month: 'short', 
+              day: 'numeric' 
+            });
+            
+            responseMessage += `${i + 1}. **${event.title}**\n`;
+            responseMessage += `   🗓️ ${date} at ${time}`;
+            if (event.location) responseMessage += `\n   📍 ${event.location}`;
+            if (event.attendees && event.attendees.length > 0) {
+              responseMessage += `\n   👥 ${event.attendees.length} attendee(s)`;
+            }
+            responseMessage += '\n\n';
           });
         } else {
           responseMessage = events.error || 'No events found for the specified time period.';
@@ -942,7 +1006,8 @@ app.post('/api/calendar-query', async (req, res) => {
             responseMessage += `Available from ${startTimeStr} to ${endTimeStr} with no conflicts.`;
           } else if (totalFreeTime > 0) {
             // Partially free - give suggestions
-            responseMessage = `⚠️ PARTIALLY FREE - You have ${totalBusyPeriods} conflict(s), but here are available slots:\n\n`;
+            responseMessage = `⚠️ **PARTIALLY FREE**\n\n`;
+            responseMessage += `You have ${totalBusyPeriods} conflict(s), but here are available slots:\n\n`;
             
             availability.availability.forEach((slot, i) => {
               const startTime = new Date(slot.start).toLocaleTimeString('en-US', { 
@@ -955,7 +1020,7 @@ app.post('/api/calendar-query', async (req, res) => {
                 minute: '2-digit', 
                 hour12: true 
               });
-              responseMessage += `${i + 1}. Free from ${startTime} to ${endTime}\n`;
+              responseMessage += `${i + 1}. 🕐 Free from **${startTime}** to **${endTime}**\n`;
             });
           } else {
             // Completely busy

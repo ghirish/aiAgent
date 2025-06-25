@@ -1,7 +1,7 @@
 {
-  "name": "calendar-copilot-mcp",
+  "name": "calmail-ai-mcp",
   "version": "1.0.0",
-  "description": "MCP-style Calendar Copilot that integrates with Google Calendar and Azure AI Foundry",
+  "description": "Google Calendar & Gmail AI Agent using MCP with Teams-inspired interface, powered by Azure AI Foundry",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
@@ -18,9 +18,12 @@
     "calendar",
     "google-calendar",
     "azure-ai",
-    "assistant"
+    "teams",
+    "ai-agent",
+    "email-scheduling",
+    "calmail"
   ],
-  "author": "",
+  "author": "Cal mail AI",
   "license": "MIT",
   "dependencies": {
     "@azure/openai": "^1.0.0-beta.12",

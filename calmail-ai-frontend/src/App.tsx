@@ -352,8 +352,8 @@ function App() {
                 <Calendar className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Calendar Copilot</h1>
-                <p className="text-sm text-gray-500">AI-Powered Calendar Assistant</p>
+                <h1 className="text-xl font-bold text-gray-900">Cal mail AI</h1>
+                <p className="text-sm text-gray-500">Google Calendar & Gmail AI Agent</p>
               </div>
             </div>
             

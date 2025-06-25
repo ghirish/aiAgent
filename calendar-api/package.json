@@ -1,7 +1,7 @@
 {
-  "name": "calendar-copilot-api",
+  "name": "calmail-ai-api",
   "version": "1.0.0",
-  "description": "API server for Calendar Copilot frontend",
+  "description": "API server for Cal mail AI - Google Calendar & Gmail AI Agent",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -23,8 +23,11 @@
   "keywords": [
     "calendar",
     "mcp",
-    "api"
+    "api",
+    "teams",
+    "ai-agent",
+    "calmail"
   ],
-  "author": "Calendar Copilot",
+  "author": "Cal mail AI",
   "license": "MIT"
 }

@@ -206,6 +206,43 @@ class RealTimeEmailMonitor {
   }
 
   /**
+   * Parse analysis result from MCP tool response
+   */
+  parseAnalysisResult(result) {
+    try {
+      console.log('🔍 Raw analysis result:', JSON.stringify(result, null, 2));
+      
+      // Handle MCP response format
+      if (result?.content?.[0]?.text) {
+        const analysisData = JSON.parse(result.content[0].text);
+        console.log('📊 Parsed analysis data:', analysisData);
+        return analysisData;
+      }
+      
+      // Handle direct object
+      if (result && typeof result === 'object') {
+        console.log('📊 Direct analysis object:', result);
+        return result;
+      }
+      
+      // Handle string response
+      if (typeof result === 'string') {
+        const parsed = JSON.parse(result);
+        console.log('📊 Parsed string analysis:', parsed);
+        return parsed;
+      }
+      
+      console.log('⚠️ Unexpected analysis result format');
+      return null;
+      
+    } catch (error) {
+      console.error('❌ Failed to parse analysis result:', error);
+      console.error('❌ Raw result was:', result);
+      return null;
+    }
+  }
+
+  /**
    * Analyze individual email for meeting/scheduling content
    */
   async analyzeEmailForMeeting(email) {
@@ -233,7 +270,7 @@ class RealTimeEmailMonitor {
         snippet: email.snippet
       });
 
-      const analysis = this.parseEmailResult(analysisResult);
+      const analysis = this.parseAnalysisResult(analysisResult);
       
       console.log('🔍 Debugging analysis object:', JSON.stringify(analysis, null, 2));
       console.log(`🔍 Analysis confidence: ${analysis?.confidence}, hasSchedulingIntent: ${analysis?.hasSchedulingIntent}`);

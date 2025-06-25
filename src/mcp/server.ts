@@ -56,52 +56,52 @@ export class CalendarCopilotServer {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
         tools: [
-          {
-            name: 'get_calendar_events',
+      {
+        name: 'get_calendar_events',
             description: 'Get calendar events for a specific time range',
-            inputSchema: {
-              type: 'object',
-              properties: {
+        inputSchema: {
+          type: 'object',
+          properties: {
                 timeMin: { type: 'string', description: 'Start time in ISO format' },
                 timeMax: { type: 'string', description: 'End time in ISO format' },
                 maxResults: { type: 'number', description: 'Maximum number of events to return', default: 10 }
-              },
+          },
               required: ['timeMin', 'timeMax']
             }
-          },
-          {
-            name: 'check_availability',
+      },
+      {
+        name: 'check_availability',
             description: 'Check if user is available during a specific time period',
-            inputSchema: {
-              type: 'object',
-              properties: {
+        inputSchema: {
+          type: 'object',
+          properties: {
                 timeMin: { type: 'string', description: 'Start time in ISO format' },
                 timeMax: { type: 'string', description: 'End time in ISO format' },
                 timeZone: { type: 'string', description: 'Time zone (optional)', default: 'UTC' }
-              },
+          },
               required: ['timeMin', 'timeMax']
             }
-          },
-          {
-            name: 'find_meeting_slots',
-            description: 'Find available meeting slots for scheduling',
-            inputSchema: {
-              type: 'object',
-              properties: {
+      },
+      {
+        name: 'find_meeting_slots',
+        description: 'Find available meeting slots for scheduling',
+        inputSchema: {
+          type: 'object',
+          properties: {
                 duration: { type: 'number', description: 'Meeting duration in minutes' },
                 timeMin: { type: 'string', description: 'Start of search range in ISO format' },
                 timeMax: { type: 'string', description: 'End of search range in ISO format' },
                 maxSuggestions: { type: 'number', description: 'Maximum number of suggestions', default: 5 }
-              },
+          },
               required: ['duration', 'timeMin', 'timeMax']
             }
-          },
-          {
-            name: 'create_event',
-            description: 'Create a new calendar event',
-            inputSchema: {
-              type: 'object',
-              properties: {
+      },
+      {
+        name: 'create_event',
+        description: 'Create a new calendar event',
+        inputSchema: {
+          type: 'object',
+          properties: {
                 summary: { type: 'string', description: 'Event title/summary' },
                 startTime: { type: 'string', description: 'Start time in ISO format' },
                 endTime: { type: 'string', description: 'End time in ISO format' },
@@ -131,7 +131,7 @@ export class CalendarCopilotServer {
               },
               required: ['eventId']
             }
-          },
+            },
           {
             name: 'cancel_event',
             description: 'Cancel/delete a calendar event',
@@ -159,8 +159,8 @@ export class CalendarCopilotServer {
             name: 'get_recent_emails',
             description: 'Get recent emails from Gmail',
             inputSchema: {
-              type: 'object',
-              properties: {
+                type: 'object',
+                properties: {
                 maxResults: { type: 'number', description: 'Maximum number of emails to return', default: 20 }
               }
             }
@@ -173,7 +173,7 @@ export class CalendarCopilotServer {
               properties: {
                 query: { type: 'string', description: 'Gmail search query' },
                 maxResults: { type: 'number', description: 'Maximum number of emails to return', default: 10 }
-              },
+                },
               required: ['query']
             }
           },
@@ -202,13 +202,13 @@ export class CalendarCopilotServer {
               type: 'object',
               properties: {}
             }
-          },
-          {
+      },
+      {
             name: 'update_email_monitoring_config',
             description: 'Update email monitoring configuration',
-            inputSchema: {
-              type: 'object',
-              properties: {
+        inputSchema: {
+          type: 'object',
+          properties: {
                 enabled: { type: 'boolean', description: 'Enable/disable monitoring' },
                 pollingIntervalMinutes: { type: 'number', description: 'Polling interval in minutes' },
                 maxEmailsPerCheck: { type: 'number', description: 'Max emails to check per cycle' },
@@ -249,29 +249,29 @@ export class CalendarCopilotServer {
               type: 'object',
               properties: {
                 emails: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
                       id: { type: 'string' },
                       subject: { type: 'string' },
                       from: { type: 'string' },
                       snippet: { type: 'string' }
-                    },
+                },
                     required: ['id', 'subject', 'from', 'snippet']
                   }
-                },
+            },
                 maxEmails: { type: 'number', default: 10 }
-              },
+          },
               required: ['emails']
             }
-          },
-          {
+      },
+      {
             name: 'suggest_meeting_times',
             description: 'Phase 4: Intelligent meeting time suggestion workflow with calendar cross-reference',
-            inputSchema: {
-              type: 'object',
-              properties: {
+        inputSchema: {
+          type: 'object',
+          properties: {
                 originalProposals: {
                   type: 'array',
                   items: { type: 'string' },
@@ -288,7 +288,7 @@ export class CalendarCopilotServer {
                       description: 'Participant emails'
                     },
                     urgency: { 
-                      type: 'string', 
+              type: 'string',
                       enum: ['low', 'medium', 'high'],
                       description: 'Meeting urgency level'
                     }
@@ -307,16 +307,16 @@ export class CalendarCopilotServer {
                   description: 'Preferred time ranges for alternatives'
                 },
                 excludeWeekends: { type: 'boolean', default: true, description: 'Exclude weekends from suggestions' }
-              },
+          },
               required: ['originalProposals', 'meetingDetails']
             }
-          },
-          {
+      },
+      {
             name: 'draft_scheduling_response',
             description: 'Phase 5: Generate professional email responses for scheduling requests with calendar integration',
-            inputSchema: {
-              type: 'object',
-              properties: {
+        inputSchema: {
+          type: 'object',
+          properties: {
                 originalEmail: {
                   type: 'object',
                   properties: {
@@ -332,21 +332,21 @@ export class CalendarCopilotServer {
                   required: ['subject', 'from', 'content']
                 },
                 responseType: {
-                  type: 'string',
+              type: 'string',
                   enum: ['accept', 'counter-propose', 'decline', 'request-info'],
                   description: 'Type of response to generate'
-                },
+            },
                 selectedTime: {
-                  type: 'string',
+              type: 'string',
                   description: 'Time slot being accepted (for accept responses)'
-                },
+            },
                 counterProposals: {
                   type: 'array',
                   items: { type: 'string' },
                   description: 'Alternative times to propose (for counter-propose responses)'
                 },
                 reason: {
-                  type: 'string',
+              type: 'string',
                   description: 'Reason for declining or counter-proposing'
                 },
                 additionalMessage: {
@@ -366,7 +366,7 @@ export class CalendarCopilotServer {
                     agenda: { type: 'string', description: 'Meeting agenda or topics' }
                   }
                 }
-              },
+          },
               required: ['originalEmail', 'responseType']
             }
           }
@@ -399,7 +399,7 @@ export class CalendarCopilotServer {
             {
               type: 'text',
               text: `Error: ${error instanceof Error ? error.message : String(error)}`,
-            },
+      },
           ],
           isError: true,
         };
@@ -561,16 +561,16 @@ export class CalendarCopilotServer {
 
       // Handle potential undefined calendars response
       if (freeBusyResult && freeBusyResult.calendars) {
-        for (const calendarId of calendarIds) {
+      for (const calendarId of calendarIds) {
           const calendarBusy = freeBusyResult.calendars[calendarId]?.busy || [];
-          
-          for (const busyPeriod of calendarBusy) {
-            busyTimes.push({
-              calendarId,
-              start: busyPeriod.start,
-              end: busyPeriod.end
-            });
-          }
+        
+        for (const busyPeriod of calendarBusy) {
+          busyTimes.push({
+            calendarId,
+            start: busyPeriod.start,
+            end: busyPeriod.end
+          });
+        }
         }
       } else {
         this.logger.warn('FreeBusy API response missing calendars data', { freeBusyResult });

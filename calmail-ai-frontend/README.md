@@ -1,6 +1,6 @@
-# Calendar Copilot React Frontend
+# Cal mail AI React Frontend
 
-A modern, beautiful React frontend for the Calendar Copilot AI-powered calendar management system, built with shadcn/ui components and Tailwind CSS.
+A modern, beautiful React frontend for Cal mail AI - a Google Calendar & Gmail AI Agent that provides intelligent email scheduling and calendar management with a Teams-inspired interface, built with shadcn/ui components and Tailwind CSS.
 
 ## ✨ Features
 
@@ -11,11 +11,11 @@ A modern, beautiful React frontend for the Calendar Copilot AI-powered calendar 
 - **Gradient Background**: Modern blue-to-indigo gradient design
 - **Icons**: Lucide React icons for visual clarity
 
-### 🤖 AI-Powered Calendar Management
-- **Natural Language Processing**: Ask questions in plain English
+### 🤖 Teams-Inspired AI-Powered Calendar Management
+- **Natural Language Processing**: Ask questions in plain English, with a Teams-inspired interface
 - **Conflict Detection**: Automatic scheduling conflict detection with smart alternatives
 - **Multiple Intent Support**: Query, schedule, update, cancel, and availability checking
-- **Real-time Responses**: Instant feedback with success/error states
+- **Real-time Responses**: Instant feedback with Teams-inspired success/error states
 
 ### 📅 Calendar Operations
 - **Event Queries**: "What events do I have tomorrow?"
@@ -37,7 +37,7 @@ A modern, beautiful React frontend for the Calendar Copilot AI-powered calendar 
 ### Prerequisites
 - Node.js 16+ 
 - npm or yarn
-- Calendar API server running on `http://localhost:3000`
+- Cal mail AI API server running on `http://localhost:3000`
 
 ### Installation
 
@@ -246,7 +246,7 @@ python -m http.server 3000 -d build
 
 ## 📄 License
 
-This project is part of the Calendar Copilot system. See the main project for licensing information.
+This project is part of the Cal mail AI system. See the main project for licensing information.
 
 ---
 

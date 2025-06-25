@@ -1,4 +1,4 @@
-# 📧 Cal mail AI - Google Calendar & Gmail AI Agent
+# 📧 CalMail AI - Google Calendar & Gmail AI Agent
 
 An intelligent, real-time calendar management AI agent built on **Model Context Protocol (MCP)** architecture that seamlessly integrates with Google Calendar and Gmail, automatically detecting meeting requests in emails, analyzing scheduling intent using GPT-4 model hosted on Azure AI Foundry, and generating professional responses with seamless calendar integration - designed as a dedicated AI assistant inspired by Teams-style AI agents.
 

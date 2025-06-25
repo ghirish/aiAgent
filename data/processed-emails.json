@@ -380,5 +380,68 @@
       "responseRequired": true
     },
     "actionTaken": "calendar_suggestion"
+  },
+  "197a36c8f6e877b4": {
+    "id": "197a36c8f6e877b4",
+    "subject": "Is Fluency Becoming a Feature?",
+    "from": "Keeping Up With AI <weslabs@mail.beehiiv.com>",
+    "receivedAt": "Tue, 24 Jun 2025 19:31:27 +0000 (UTC)",
+    "processedAt": "2025-06-24T20:45:56.509Z",
+    "hasSchedulingIntent": false,
+    "actionTaken": "none"
+  },
+  "197a2fb7d593dde4": {
+    "id": "197a2fb7d593dde4",
+    "subject": "Meet Jobright Agent – the world’s first AI that hunts jobs for you",
+    "from": "Ethan Zheng <ethan@jobright.ai>",
+    "receivedAt": "Tue, 24 Jun 2025 17:27:56 +0000",
+    "processedAt": "2025-06-24T20:45:56.513Z",
+    "hasSchedulingIntent": false,
+    "actionTaken": "none"
+  },
+  "197a29dbc5fa7879": {
+    "id": "197a29dbc5fa7879",
+    "subject": "City of New York just posted a 77% match ATAS Application Developer role 39 minutes ago",
+    "from": "Jobright <noreply@jobright.ai>",
+    "receivedAt": "Tue, 24 Jun 2025 15:45:32 +0000",
+    "processedAt": "2025-06-24T20:45:56.513Z",
+    "hasSchedulingIntent": false,
+    "actionTaken": "none"
+  },
+  "197a22bc6a6d92ef": {
+    "id": "197a22bc6a6d92ef",
+    "subject": "Summer plans? These styles say yes",
+    "from": "\"H&M\" <newsletter@email.hm.com>",
+    "receivedAt": "Tue, 24 Jun 2025 15:40:52 +0200",
+    "processedAt": "2025-06-24T20:45:56.514Z",
+    "hasSchedulingIntent": false,
+    "actionTaken": "none"
+  },
+  "197a1433a2aefd48": {
+    "id": "197a1433a2aefd48",
+    "subject": "Naval Horizons Deadline Has Been Extended! Enter today!",
+    "from": "Naval STEM Internships <navalsteminterns@4562445.brevosend.com>",
+    "receivedAt": "Tue, 24 Jun 2025 09:27:04 +0000",
+    "processedAt": "2025-06-24T20:45:56.515Z",
+    "hasSchedulingIntent": false,
+    "actionTaken": "none"
+  },
+  "197a3dc930f69bf2": {
+    "id": "197a3dc930f69bf2",
+    "subject": "???? Get Ready for Summer Intramurals at UCI! ???",
+    "from": "IMLeagues <noreply@imleagues.com>",
+    "receivedAt": "24 Jun 2025 16:33:34 -0500",
+    "processedAt": "2025-06-24T21:38:01.866Z",
+    "hasSchedulingIntent": false,
+    "actionTaken": "none"
+  },
+  "197a3e1b1a94a943": {
+    "id": "197a3e1b1a94a943",
+    "subject": "Membership Canceled",
+    "from": "Zipcar <do-not-reply@zipcar.com>",
+    "receivedAt": "Tue, 24 Jun 2025 21:39:23 +0000 (UTC)",
+    "processedAt": "2025-06-24T21:41:04.394Z",
+    "hasSchedulingIntent": false,
+    "actionTaken": "none"
   }
 }

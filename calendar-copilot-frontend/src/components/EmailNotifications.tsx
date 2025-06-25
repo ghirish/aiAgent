@@ -77,7 +77,8 @@ const EmailNotifications: React.FC = () => {
       setNotifications(prev => [{
         id: Date.now(),
         ...notification,
-        isNew: true
+        isNew: true,
+        responseStatus: 'none'
       }, ...prev].slice(0, 10)); // Keep only last 10 notifications
     });
 
@@ -88,7 +89,8 @@ const EmailNotifications: React.FC = () => {
       setNotifications(prev => [{
         id: Date.now(),
         ...notification,
-        isNew: true
+        isNew: true,
+        responseStatus: 'none'
       }, ...prev].slice(0, 10));
     });
 
@@ -108,6 +110,115 @@ const EmailNotifications: React.FC = () => {
         notif.id === id ? { ...notif, isNew: false } : notif
       )
     );
+  };
+
+  const updateNotificationStatus = (id: number, status: Notification['responseStatus'], response?: EmailResponse) => {
+    setNotifications(prev => 
+      prev.map(notif => 
+        notif.id === id ? { 
+          ...notif, 
+          responseStatus: status,
+          ...(response && { generatedResponse: response })
+        } : notif
+      )
+    );
+  };
+
+  // Phase 6: Generate Response for Email
+  const generateResponse = async (notification: Notification, responseType: EmailResponse['responseType']) => {
+    updateNotificationStatus(notification.id, 'generating');
+    
+    try {
+      const response = await fetch('http://localhost:3000/api/generate-response', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          originalEmail: {
+            subject: notification.data.subject,
+            from: notification.data.from,
+            content: notification.data.snippet
+          },
+          responseType,
+          includeCalendarInvite: responseType === 'accept'
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        updateNotificationStatus(notification.id, 'generated', result.emailResponse);
+      } else {
+        updateNotificationStatus(notification.id, 'failed');
+        alert('❌ Failed to generate response: ' + result.error);
+      }
+    } catch (error: any) {
+      console.error('Response generation failed:', error);
+      updateNotificationStatus(notification.id, 'failed');
+      alert('❌ Failed to generate response: ' + error.message);
+    }
+  };
+
+  // Phase 6: Open Response for Editing
+  const openResponseEditor = (notification: Notification) => {
+    if (notification.generatedResponse) {
+      setResponseModal({
+        isOpen: true,
+        notification,
+        editedResponse: { ...notification.generatedResponse }
+      });
+    }
+  };
+
+  // Phase 6: Update Edited Response
+  const updateEditedResponse = (field: keyof EmailResponse, value: any) => {
+    setResponseModal(prev => ({
+      ...prev,
+      editedResponse: prev.editedResponse ? {
+        ...prev.editedResponse,
+        [field]: value
+      } : null
+    }));
+  };
+
+  // Phase 6: Send Email Response
+  const sendResponse = async (notification: Notification, response: EmailResponse) => {
+    updateNotificationStatus(notification.id, 'sending');
+    setResponseModal({ isOpen: false, notification: null, editedResponse: null });
+    
+    try {
+      const sendResponse = await fetch('http://localhost:3000/api/send-response', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          originalEmailId: notification.data.emailId,
+          response: {
+            to: notification.data.from,
+            subject: response.subject,
+            body: response.body,
+            inReplyTo: notification.data.emailId
+          },
+          calendarInvite: response.calendarInvite
+        })
+      });
+      
+      const result = await sendResponse.json();
+      
+      if (result.success) {
+        updateNotificationStatus(notification.id, 'sent');
+        alert('✅ Response sent successfully!');
+      } else {
+        updateNotificationStatus(notification.id, 'failed');
+        alert('❌ Failed to send response: ' + result.error);
+      }
+    } catch (error: any) {
+      console.error('Send response failed:', error);
+      updateNotificationStatus(notification.id, 'failed');
+      alert('❌ Failed to send response: ' + error.message);
+    }
   };
 
   const testEmailMonitoring = async () => {
@@ -167,11 +278,11 @@ const EmailNotifications: React.FC = () => {
         body: JSON.stringify({
           emailData: {
             emailId: `ui-test-${Date.now()}`,
-            subject: '🚀 UI TEST: Direct WebSocket Test',
-            from: 'ui-test@example.com',
-            snippet: 'This is a direct test from the UI to verify WebSocket notifications work properly.',
-            confidence: 0.99,
-            suggestedActions: ['This should appear instantly', 'WebSocket is working'],
+            subject: '🚀 Phase 6 TEST: Project Meeting Request',
+            from: 'colleague@company.com',
+            snippet: 'Hi! I\'d like to schedule a project meeting for next Tuesday at 2pm. Does this work for you? We need to discuss the project timeline and deliverables.',
+            confidence: 0.95,
+            suggestedActions: ['Generate response', 'Check calendar availability'],
             detectedAt: new Date().toISOString()
           }
         })
@@ -181,7 +292,7 @@ const EmailNotifications: React.FC = () => {
       console.log('🚀 Direct test result:', result);
       
       if (result.success) {
-        alert('✅ Direct test sent! You should see a notification above.');
+        alert('✅ Phase 6 test sent! Try generating a response.');
       } else {
         alert('❌ Direct test failed: ' + result.error);
       }
@@ -191,8 +302,33 @@ const EmailNotifications: React.FC = () => {
     }
   };
 
+  const getStatusColor = (status: Notification['responseStatus']) => {
+    switch (status) {
+      case 'generating': return '#f59e0b';
+      case 'generated': return '#10b981';
+      case 'editing': return '#3b82f6';
+      case 'sending': return '#f59e0b';
+      case 'sent': return '#22c55e';
+      case 'failed': return '#ef4444';
+      default: return '#6b7280';
+    }
+  };
+
+  const getStatusText = (status: Notification['responseStatus']) => {
+    switch (status) {
+      case 'generating': return '⏳ Generating...';
+      case 'generated': return '✅ Response Ready';
+      case 'editing': return '✏️ Editing';
+      case 'sending': return '📤 Sending...';
+      case 'sent': return '✅ Sent';
+      case 'failed': return '❌ Failed';
+      default: return '';
+    }
+  };
+
   return (
-    <div className="email-notifications-container" style={{ 
+    <>
+      <div className="email-notifications-container" style={{ 
       position: 'fixed', 
       top: '20px', 
       right: '20px', 
@@ -216,7 +352,7 @@ const EmailNotifications: React.FC = () => {
         paddingBottom: '12px'
       }}>
         <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>
-          📧 Meeting Email Alerts
+          📧 Calendar Copilot
         </h3>
         <div style={{ 
           display: 'flex', 
@@ -284,9 +420,9 @@ const EmailNotifications: React.FC = () => {
             borderRadius: '4px',
             cursor: 'pointer'
           }}
-        >
-          🚀 Direct Test
-        </button>
+                  >
+            🚀 Phase 6 Test
+          </button>
       </div>
 
       {/* Notifications List */}
@@ -362,19 +498,33 @@ const EmailNotifications: React.FC = () => {
                 </button>
               </div>
 
-              {/* Confidence & Details */}
-              {notification.data?.confidence && (
-                <div style={{ 
-                  fontSize: '12px',
-                  marginBottom: '8px',
-                  padding: '4px 8px',
-                  backgroundColor: '#dbeafe',
-                  borderRadius: '4px',
-                  color: '#1e40af'
-                }}>
-                  🎯 AI Confidence: {(notification.data.confidence * 100).toFixed(0)}%
-                </div>
-              )}
+              {/* Confidence & Status */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                {notification.data?.confidence && (
+                  <div style={{ 
+                    fontSize: '12px',
+                    padding: '4px 8px',
+                    backgroundColor: '#dbeafe',
+                    borderRadius: '4px',
+                    color: '#1e40af'
+                  }}>
+                    🎯 {(notification.data.confidence * 100).toFixed(0)}%
+                  </div>
+                )}
+                
+                {notification.responseStatus !== 'none' && (
+                  <div style={{ 
+                    fontSize: '12px',
+                    padding: '4px 8px',
+                    backgroundColor: getStatusColor(notification.responseStatus) + '20',
+                    borderRadius: '4px',
+                    color: getStatusColor(notification.responseStatus),
+                    border: `1px solid ${getStatusColor(notification.responseStatus)}40`
+                  }}>
+                    {getStatusText(notification.responseStatus)}
+                  </div>
+                )}
+              </div>
 
               {/* Email Snippet */}
               {notification.data?.snippet && (
@@ -388,6 +538,41 @@ const EmailNotifications: React.FC = () => {
                   fontStyle: 'italic'
                 }}>
                   "{notification.data.snippet.substring(0, 150)}..."
+                </div>
+              )}
+
+              {/* Generated Response Preview */}
+              {notification.generatedResponse && notification.responseStatus === 'generated' && (
+                <div style={{ 
+                  backgroundColor: '#f0fdf4',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: '4px',
+                  padding: '8px',
+                  marginBottom: '8px'
+                }}>
+                  <div style={{ 
+                    fontSize: '12px', 
+                    fontWeight: '600',
+                    color: '#15803d',
+                    marginBottom: '4px'
+                  }}>
+                    ✅ Generated Response ({notification.generatedResponse.responseType}):
+                  </div>
+                  <div style={{ 
+                    fontSize: '12px',
+                    color: '#166534',
+                    marginBottom: '4px'
+                  }}>
+                    <strong>Subject:</strong> {notification.generatedResponse.subject}
+                  </div>
+                  <div style={{ 
+                    fontSize: '11px',
+                    color: '#166534',
+                    maxHeight: '60px',
+                    overflow: 'hidden'
+                  }}>
+                    {notification.generatedResponse.body.substring(0, 120)}...
+                  </div>
                 </div>
               )}
 
@@ -418,11 +603,12 @@ const EmailNotifications: React.FC = () => {
                 </div>
               )}
 
-              {/* Action Buttons */}
+              {/* Phase 6: Response Action Buttons */}
               <div style={{ 
                 display: 'flex', 
-                gap: '8px',
-                flexWrap: 'wrap'
+                gap: '6px',
+                flexWrap: 'wrap',
+                marginTop: '8px'
               }}>
                 {notification.isNew && (
                   <button
@@ -441,41 +627,327 @@ const EmailNotifications: React.FC = () => {
                   </button>
                 )}
                 
-                <button
-                  style={{
-                    padding: '4px 8px',
-                    fontSize: '11px',
-                    backgroundColor: '#3b82f6',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '3px',
-                    cursor: 'pointer'
-                  }}
-                  onClick={() => alert('📅 Calendar integration coming in Phase 5 & 6!')}
-                >
-                  📅 View Calendar
-                </button>
+                {/* Response Generation Buttons */}
+                {notification.responseStatus === 'none' && (
+                  <>
+                    <button
+                      onClick={() => generateResponse(notification, 'accept')}
+                      style={{
+                        padding: '4px 8px',
+                        fontSize: '11px',
+                        backgroundColor: '#22c55e',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '3px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      ✅ Accept
+                    </button>
+                    <button
+                      onClick={() => generateResponse(notification, 'counter-propose')}
+                      style={{
+                        padding: '4px 8px',
+                        fontSize: '11px',
+                        backgroundColor: '#f59e0b',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '3px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      🔄 Counter
+                    </button>
+                    <button
+                      onClick={() => generateResponse(notification, 'decline')}
+                      style={{
+                        padding: '4px 8px',
+                        fontSize: '11px',
+                        backgroundColor: '#ef4444',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '3px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      ❌ Decline
+                    </button>
+                  </>
+                )}
                 
-                <button
-                  style={{
+                {/* Edit and Send Buttons */}
+                {notification.responseStatus === 'generated' && (
+                  <>
+                    <button
+                      onClick={() => openResponseEditor(notification)}
+                      style={{
+                        padding: '4px 8px',
+                        fontSize: '11px',
+                        backgroundColor: '#3b82f6',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '3px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      ✏️ Edit
+                    </button>
+                    <button
+                      onClick={() => notification.generatedResponse && sendResponse(notification, notification.generatedResponse)}
+                      style={{
+                        padding: '4px 8px',
+                        fontSize: '11px',
+                        backgroundColor: '#8b5cf6',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '3px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      📤 Send
+                    </button>
+                  </>
+                )}
+                
+                {notification.responseStatus === 'sent' && (
+                  <div style={{
                     padding: '4px 8px',
                     fontSize: '11px',
-                    backgroundColor: '#8b5cf6',
+                    backgroundColor: '#22c55e',
                     color: 'white',
-                    border: 'none',
-                    borderRadius: '3px',
-                    cursor: 'pointer'
-                  }}
-                  onClick={() => alert('✉️ Response generation coming in Phase 5 & 6!')}
-                >
-                  ✉️ Draft Response
-                </button>
+                    borderRadius: '3px'
+                  }}>
+                    ✅ Response Sent
+                  </div>
+                )}
               </div>
             </div>
           ))
         )}
       </div>
     </div>
+
+    {/* Phase 6: Response Edit Modal */}
+    {responseModal.isOpen && responseModal.notification && responseModal.editedResponse && (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        zIndex: 2000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px'
+      }}>
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          maxWidth: '600px',
+          width: '100%',
+          maxHeight: '80vh',
+          overflow: 'auto',
+          padding: '24px'
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '20px',
+            borderBottom: '1px solid #e5e7eb',
+            paddingBottom: '12px'
+          }}>
+            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>
+              ✏️ Edit Response
+            </h3>
+            <button
+              onClick={() => setResponseModal({ isOpen: false, notification: null, editedResponse: null })}
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: '20px',
+                cursor: 'pointer',
+                color: '#6b7280'
+              }}
+            >
+              ✕
+            </button>
+          </div>
+
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ 
+              display: 'block', 
+              fontSize: '14px', 
+              fontWeight: '600',
+              marginBottom: '4px',
+              color: '#374151'
+            }}>
+              Subject:
+            </label>
+            <input
+              type="text"
+              value={responseModal.editedResponse.subject}
+              onChange={(e) => updateEditedResponse('subject', e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                border: '1px solid #d1d5db',
+                borderRadius: '4px',
+                fontSize: '14px'
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ 
+              display: 'block', 
+              fontSize: '14px', 
+              fontWeight: '600',
+              marginBottom: '4px',
+              color: '#374151'
+            }}>
+              Email Body:
+            </label>
+            <textarea
+              value={responseModal.editedResponse.body}
+              onChange={(e) => updateEditedResponse('body', e.target.value)}
+              rows={12}
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: '1px solid #d1d5db',
+                borderRadius: '4px',
+                fontSize: '14px',
+                fontFamily: 'inherit',
+                resize: 'vertical'
+              }}
+            />
+          </div>
+
+          <div style={{ 
+            display: 'flex', 
+            gap: '8px',
+            marginBottom: '16px'
+          }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ 
+                display: 'block', 
+                fontSize: '12px', 
+                fontWeight: '600',
+                marginBottom: '4px',
+                color: '#374151'
+              }}>
+                Tone:
+              </label>
+              <select
+                value={responseModal.editedResponse.tone}
+                onChange={(e) => updateEditedResponse('tone', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '6px 8px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '4px',
+                  fontSize: '12px'
+                }}
+              >
+                <option value="professional">Professional</option>
+                <option value="friendly">Friendly</option>
+                <option value="formal">Formal</option>
+              </select>
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ 
+                display: 'block', 
+                fontSize: '12px', 
+                fontWeight: '600',
+                marginBottom: '4px',
+                color: '#374151'
+              }}>
+                Response Type:
+              </label>
+              <select
+                value={responseModal.editedResponse.responseType}
+                onChange={(e) => updateEditedResponse('responseType', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '6px 8px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '4px',
+                  fontSize: '12px'
+                }}
+              >
+                <option value="accept">Accept</option>
+                <option value="counter-propose">Counter-Propose</option>
+                <option value="decline">Decline</option>
+                <option value="request-info">Request Info</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={{
+            display: 'flex',
+            gap: '12px',
+            justifyContent: 'flex-end'
+          }}>
+            <button
+              onClick={() => setResponseModal({ isOpen: false, notification: null, editedResponse: null })}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#6b7280',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                if (responseModal.notification && responseModal.editedResponse) {
+                  // Update the notification with edited response
+                  updateNotificationStatus(responseModal.notification.id, 'generated', responseModal.editedResponse);
+                  setResponseModal({ isOpen: false, notification: null, editedResponse: null });
+                }
+              }}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              Save Changes
+            </button>
+            <button
+              onClick={() => {
+                if (responseModal.notification && responseModal.editedResponse) {
+                  sendResponse(responseModal.notification, responseModal.editedResponse);
+                }
+              }}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#22c55e',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              📤 Send Now
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 

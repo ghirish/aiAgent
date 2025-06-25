@@ -1,5 +1,5 @@
 {
-  "lastChecked": "2025-06-24T05:21:10.125Z",
+  "lastChecked": "2025-06-25T00:21:47.347Z",
   "processedEmails": [
     "test_001",
     "test_002",
@@ -30,8 +30,15 @@
     "197a01f2c69ade7c",
     "197a03f06258d4fc",
     "197a047cfdc62b06",
-    "197a04f9f83fbdc5"
+    "197a04f9f83fbdc5",
+    "197a36c8f6e877b4",
+    "197a2fb7d593dde4",
+    "197a29dbc5fa7879",
+    "197a22bc6a6d92ef",
+    "197a1433a2aefd48",
+    "197a3dc930f69bf2",
+    "197a3e1b1a94a943"
   ],
-  "totalEmailsProcessed": 30,
+  "totalEmailsProcessed": 37,
   "schedulingEmailsFound": 7
 }

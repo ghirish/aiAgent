@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "name": "calmail-ai-frontend",
+  "buildCommand": "cd calmail-ai-frontend && npm run build",
+  "outputDirectory": "calmail-ai-frontend/build",
+  "devCommand": "cd calmail-ai-frontend && npm start",
+  "installCommand": "cd calmail-ai-frontend && npm install",
+  "framework": "create-react-app",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+} 

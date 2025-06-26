@@ -1,34 +1,34 @@
-# 📧 Cal mail AI - Google Calendar & Gmail AI Agent
+# CalMail AI - Google Calendar & Gmail AI Agent
 
 An intelligent, real-time calendar management AI agent built on **Model Context Protocol (MCP)** architecture that seamlessly integrates with Google Calendar and Gmail, automatically detecting meeting requests in emails, analyzing scheduling intent using GPT-4 model hosted on Azure AI Foundry, and generating professional responses with seamless calendar integration - designed as a dedicated AI assistant inspired by Teams-style AI agents.
 
-## 🌟 Key Features
+## Key Features
 
-### 🔄 **Real-Time Email Monitoring**
+### **Real-Time Email Monitoring**
 - **30-second polling** for new meeting-related emails
 - **Keyword-based pre-filtering** for performance optimization
 - **WebSocket notifications** for instant UI updates
 - **Azure AI analysis** with 80%+ confidence scoring
 
-### 🤖 **Intelligent Response Generation**
+### **Intelligent Response Generation**
 - **Multi-response types**: Accept, Counter-propose, Decline, Request-info
 - **Professional email formatting** with appropriate tone detection
 - **Custom message integration** and meeting details handling
 - **Calendar invite generation** for accepted meetings
 
-### 🎨 **Teams-Inspired Interactive Interface**
+### **Teams-Inspired Interactive Interface**
 - **Real-time notification panel** with action buttons
 - **Response editing modal** with live preview
 - **Status tracking** (generating → editing → sending → sent)
 - **Professional UI styling** with Teams-inspired workflow states
 
-### 📊 **Advanced Calendar Operations**
+### **Advanced Calendar Operations**
 - **Natural language processing** for calendar queries
 - **Conflict detection** and alternative time suggestions
 - **Availability checking** across multiple calendars
 - **Smart scheduling** with user preference learning
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```
 Email Detection → AI Analysis → WebSocket Notification → 
@@ -43,7 +43,7 @@ User Response Selection → AI Generation → Edit Modal → Send Response
 - **Azure AI Service** - GPT-4o for scheduling analysis via MCP tools
 - **Google APIs** - Calendar and Gmail integration through MCP interface
 
-## 🔧 **MCP (Model Context Protocol) Integration**
+## **MCP (Model Context Protocol) Integration**
 
 This project showcases **Model Context Protocol** as a core architectural pattern for building AI agents:
 
@@ -65,7 +65,7 @@ This project showcases **Model Context Protocol** as a core architectural patter
 4. **AI Model** executes appropriate MCP tools (calendar, email, analysis)
 5. **Results** flow back through MCP → Backend → Frontend with real-time updates
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Node.js 18+ and npm
@@ -116,10 +116,10 @@ cd calmail-ai-frontend && npm start
 
 ### 5. Test the System
 - Open: http://localhost:3001
-- Click "🧪 Test Meeting Email" for demo
-- Use "🚀 Phase 6 Test" for full workflow testing
+- Click "Test Meeting Email" for demo
+- Use "Phase 6 Test" for full workflow testing
 
-## 🧪 Testing & Validation
+## Testing & Validation
 
 ### **Automated Tests**
 ```bash
@@ -143,7 +143,7 @@ node test-phase6-complete-workflow.js
 - "What do I have today?"
 - "Check my availability this week"
 
-## 📡 API Endpoints
+## API Endpoints
 
 ### **Email Monitoring**
 - `GET /api/email-monitor-status` - Monitor status
@@ -160,7 +160,7 @@ node test-phase6-complete-workflow.js
 - `POST /api/calendar-query` - Direct MCP server communication for calendar operations
 - All calendar operations leverage MCP tools for standardized AI-service integration
 
-## 🛠️ MCP Tools Available
+## MCP Tools Available
 
 The power of **Model Context Protocol** shines through our comprehensive tool ecosystem:
 
@@ -185,51 +185,19 @@ The power of **Model Context Protocol** shines through our comprehensive tool ec
 - `analyze_email_for_scheduling` - Advanced meeting intent detection and extraction
 
 ### **MCP Architecture Benefits:**
-- ✅ **Tool Discoverability**: AI can explore available tools dynamically
-- ✅ **Composable Operations**: Tools work together for complex workflows
-- ✅ **Type Safety**: Structured input/output with JSON schema validation
-- ✅ **Error Handling**: Graceful fallbacks when tools are unavailable
-- ✅ **Extensibility**: Easy to add new tools without changing core logic
+- **Tool Discoverability**: AI can explore available tools dynamically
+- **Composable Operations**: Tools work together for complex workflows
+- **Type Safety**: Structured input/output with JSON schema validation
+- **Error Handling**: Graceful fallbacks when tools are unavailable
+- **Extensibility**: Easy to add new tools without changing core logic
 
-## 🔒 Security Features
 
-### **Data Protection**
-- ✅ **Environment variables** for all sensitive data
-- ✅ **JWT tokens** for authentication
-- ✅ **Encryption keys** for data security  
-- ✅ **OAuth 2.0** for Google API access
-- ✅ **No hardcoded credentials** in source code
-
-### **API Security**
-- Rate limiting on endpoints
-- CORS configuration for frontend
-- Input validation and sanitization
-- Error handling without data exposure
-
-## 📈 Performance & Reliability
-
-### **Monitoring**
-- **30-second email polling** - Balance of responsiveness & resource usage
-- **WebSocket connections** - Real-time UI updates
-- **Fallback systems** - Graceful degradation when services unavailable
-- **Error logging** - Comprehensive debugging information
-
-### **Scalability**
-- **Modular architecture** - Easy to extend and maintain
-- **Service separation** - Frontend, backend, MCP server isolation
-- **Async processing** - Non-blocking operations
-- **Batch processing** - Efficient email handling
-
-## 🎯 What's Next
+## What's Next
 
 ### **Immediate Enhancements**
 - [ ] **Microsoft Teams integration** - Native Teams app support
 - [ ] **Multi-calendar support** - Integrate multiple Google accounts
 - [ ] **Smart scheduling rules** - User preference learning system
-- [ ] **Email templates** - Customizable response templates
-- [ ] **Meeting insights** - Analytics on scheduling patterns
-
-### **Advanced Features**
 - [ ] **Teams/Slack integration** - Extend beyond email
 - [ ] **Voice commands** - Speech-to-text scheduling
 - [ ] **Smart suggestions** - Proactive meeting recommendations
@@ -245,7 +213,7 @@ The power of **Model Context Protocol** shines through our comprehensive tool ec
 - [ ] **Sentiment analysis** - Detect urgency and importance
 - [ ] **Meeting optimization** - Suggest better meeting times
 
-## 🤝 Contributing
+## Contributing
 
 ### **Development Setup**
 1. Fork the repository
@@ -260,17 +228,9 @@ The power of **Model Context Protocol** shines through our comprehensive tool ec
 - Include error handling and edge cases
 - Document any external dependencies
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgments
-
-- **Azure AI** for GPT-4o integration
-- **Google APIs** for Calendar and Gmail access
-- **MCP Protocol** for intelligent tool orchestration
-- **React/TypeScript** for modern frontend development
-
 ---
 
 **🎉 Calendar Copilot is production-ready and actively maintained!**
